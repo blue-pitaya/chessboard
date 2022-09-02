@@ -5,9 +5,14 @@ ThisBuild / organizationName := "example"
 
 val baseDependencies = Seq()
 
+val testDependencties = Seq(
+  "org.scalatest" %% "scalatest" % "3.2.13" % Test
+)
+
 lazy val root = (project in file("."))
   .settings(
     name := "chessboard",
-    libraryDependencies += baseDependencies
+    libraryDependencies ++= baseDependencies ++ testDependencties,
+    libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.13" % Test
   )
   .enablePlugins(ScalaJSPlugin)

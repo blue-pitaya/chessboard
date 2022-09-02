@@ -1,30 +1,52 @@
+<script lang="ts" setup>
+import Chessboard from "@/views/Chessboard.vue";
+</script>
+
 <template>
-  <nav>
-    <router-link to="/">Home</router-link> |
-    <router-link to="/about">About</router-link>
-  </nav>
-  <router-view />
+  <Chessboard />
 </template>
 
 <style>
+html {
+  background: #0f0f0f;
+  font-size: 1.1rem;
+  width: 100%;
+}
+
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
+  font-family: Iosevka Web, Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
-  color: #2c3e50;
+  color: #f0f0f0;
+  max-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  margin: auto;
 }
 
-nav {
-  padding: 30px;
-}
-
-nav a {
+h1 {
+  font-size: 2.2rem;
+  color: #f0c3f0;
   font-weight: bold;
-  color: #2c3e50;
 }
 
-nav a.router-link-exact-active {
+h2 {
+  color: #c28246;
+  font-weight: bold;
+}
+
+p {
+  text-align: justify;
+}
+
+a {
+  font-weight: bold;
+  color: #fff7bd;
+  text-decoration: none;
+}
+
+a.router-link-exact-active {
   color: #42b983;
 }
 </style>
