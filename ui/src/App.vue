@@ -7,10 +7,14 @@ import Chessboard from "@/views/Chessboard.vue";
 </template>
 
 <style>
-html {
+html,
+body,
+#app {
   background: #0f0f0f;
   font-size: 1.1rem;
   width: 100%;
+  height: 100%;
+  margin: 0;
 }
 
 #app {

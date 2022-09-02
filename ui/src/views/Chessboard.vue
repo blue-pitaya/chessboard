@@ -11,8 +11,9 @@ import Board from "@/components/Board.vue";
 <style scoped>
 .centerElement {
   display: flex;
-  background-color: red;
   width: 100%;
   height: 100%;
+  justify-content: center;
+  align-items: center;
 }
 </style>

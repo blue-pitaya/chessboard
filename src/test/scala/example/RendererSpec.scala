@@ -3,21 +3,55 @@ package example
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import example.models.Vec2d
-import example.models.Color
+import example.models.HexColor
 
 class RendererSpec extends AnyFlatSpec with Matchers {
-  "render tiles" should "be ok" in {
-    val darkColor = Color(0, 0, 0)
-    val lightColor = Color(255, 255, 255)
-    val colorset = TileColorset(darkColor, lightColor)
-    val size = Vec2d(2, 2)
-    val expected = Map(
+  val darkColor = HexColor("#000000")
+  val lightColor = HexColor("#ffffff")
+  val someBoard = Board(
+    tiles = Map(
       Vec2d(0, 0) -> Tile(color = darkColor),
       Vec2d(1, 0) -> Tile(color = lightColor),
       Vec2d(0, 1) -> Tile(color = lightColor),
       Vec2d(1, 1) -> Tile(color = darkColor)
+    ),
+    size = Vec2d(2, 2)
+  )
+
+  "getTiles" should "be ok" in {
+    val colorset = TileColorset(darkColor, lightColor)
+    val size = Vec2d(2, 2)
+    val expected = someBoard
+
+    Renderer.getTiles(size, colorset) shouldEqual expected
+  }
+
+  "renderTiles" should "be ok" in {
+    val totalSizeInPx = Vec2d(200, 200)
+    val expectedSize = Vec2d(100, 100)
+    val expected = Set(
+      TileObj(
+        position = Vec2d(0, 0),
+        size = expectedSize,
+        color = lightColor.value
+      ),
+      TileObj(
+        position = Vec2d(100, 0),
+        size = expectedSize,
+        color = darkColor.value
+      ),
+      TileObj(
+        position = Vec2d(0, 100),
+        size = expectedSize,
+        color = darkColor.value
+      ),
+      TileObj(
+        position = Vec2d(100, 100),
+        size = expectedSize,
+        color = lightColor.value
+      )
     )
 
-    Renderer.renderTiles(size, colorset) shouldEqual expected
+    Renderer.renderBoard(totalSizeInPx, someBoard) shouldEqual expected
   }
 }

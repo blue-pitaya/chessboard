@@ -1,25 +1,47 @@
 package example
 
 import example.models.Vec2d
-import example.models.Color
+import example.models.HexColor
 import scala.scalajs.js.annotation._
 
-@JSExportAll
-case class Tile(color: Color)
+case class Tile(color: HexColor)
+
+case class TileColorset(dark: HexColor, light: HexColor)
+
+case class Board(tiles: Map[Vec2d, Tile], size: Vec2d)
 
 @JSExportAll
-case class TileColorset(dark: Color, light: Color)
+case class TileObj(position: Vec2d, size: Vec2d, color: String)
 
 object Renderer {
-  @JSExportTopLevel("renderTiles")
-  def renderTiles(size: Vec2d, colorset: TileColorset): Map[Vec2d, Tile] = {
+  def getTiles(size: Vec2d, colorset: TileColorset): Board = {
     val positions = Vec2d.matrixUntil(Vec2d.zero, size)
-    positions
+    val tiles = positions
       .map { p =>
         val isDark = (p.x + p.y) % 2 == 0
         val tile = Tile(color = if (isDark) colorset.dark else colorset.light)
         (p -> tile)
       }
       .toMap
+
+    Board(tiles = tiles, size = size)
   }
+
+  def renderBoard(totalSizeInPx: Vec2d, board: Board): Set[TileObj] = {
+    val tileSize =
+      Vec2d(totalSizeInPx.x / board.size.x, totalSizeInPx.y / board.size.y)
+
+    board
+      .tiles
+      .map { case (pos, tile) =>
+        val xInPx = pos.x * tileSize.x
+        // note: board positions and render positions has opposite y axis
+        val yInPx = totalSizeInPx.y - tileSize.y - (pos.y * tileSize.y)
+        val posInPx = Vec2d(xInPx, yInPx)
+
+        TileObj(position = posInPx, size = tileSize, color = tile.color.value)
+      }
+      .toSet
+  }
+
 }

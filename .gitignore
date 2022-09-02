@@ -10,6 +10,8 @@ data/
 *.metals
 .bsp
 
+ui/src/scalajs
+
 # Auto-generated from vue create
 
 .DS_Store
