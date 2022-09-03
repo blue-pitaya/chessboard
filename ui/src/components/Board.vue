@@ -14,6 +14,8 @@ const tiles: Array<Tile> = renderTiles();
       :position="t.position"
       :size="t.size"
       :color="t.color"
+      :file-mark="t.fileMark"
+      :rank-mark="t.rankMark"
     />
   </svg>
 </template>

@@ -10,4 +10,6 @@ export interface Tile {
   position: Vec2d;
   size: Vec2d;
   color: string;
+  fileMark?: string;
+  rankMark?: string;
 }
