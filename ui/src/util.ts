@@ -13,3 +13,17 @@ export interface Tile {
   fileMark?: string;
   rankMark?: string;
 }
+
+export interface Piece {
+  position: Vec2d;
+  size: Vec2d;
+  pieceColor: string;
+  pieceKind: string;
+}
+
+export const pieceToImageFilename = (piece: Piece): string => {
+  const color = piece.pieceColor.toLowerCase();
+  const kind = piece.pieceKind.toLowerCase();
+
+  return `${color}-${kind}.png`;
+};

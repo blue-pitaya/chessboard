@@ -11,6 +11,14 @@ object Api {
 
   @JSExportTopLevel("renderTiles")
   def renderTiles(): js.Array[TileObj] = Renderer
-    .renderBoard(boardSizeInPx, Renderer.getTiles(boardSize, tileColorset))
+    .renderBoard(
+      Renderer.getTiles(boardDimens.logicSize, tileColorset),
+      boardDimens
+    )
+    .toJSArray
+
+  @JSExportTopLevel("renderPieces")
+  def renderPieces(): js.Array[PieceObj] = Renderer
+    .renderPieces(Game.initPieces, boardDimens)
     .toJSArray
 }

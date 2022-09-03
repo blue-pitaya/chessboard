@@ -13,14 +13,6 @@ const props = defineProps<{
 const transformString = computed(
   () => `translate(${props.position.x}, ${props.position.y})`
 );
-
-const rankTransformString = computed(
-  () => `translate(${props.position.x + 3}, ${props.position.y + 20})`
-);
-
-const fileTransformString = computed(
-  () => `translate(${props.position.x + 3}, ${props.position.y + 90})`
-);
 </script>
 
 <template>

@@ -9,15 +9,17 @@ import scala.scalajs.js.JSConverters._
 class RendererSpec extends AnyFlatSpec with Matchers {
   val darkColor = HexColor("#000000")
   val lightColor = HexColor("#ffffff")
-  val someBoard = Board(
-    tiles = Map(
+  val someBoard = Board(tiles =
+    Map(
       Vec2d(0, 0) -> Tile(color = darkColor),
       Vec2d(1, 0) -> Tile(color = lightColor),
       Vec2d(0, 1) -> Tile(color = lightColor),
       Vec2d(1, 1) -> Tile(color = darkColor)
-    ),
-    size = Vec2d(2, 2)
+    )
   )
+
+  val boardDimens =
+    BoardDimens(logicSize = Vec2d(2, 2), realSizeInPx = Vec2d(200, 200))
 
   "getTiles" should "be ok" in {
     val colorset = TileColorset(darkColor, lightColor)
@@ -57,10 +59,10 @@ class RendererSpec extends AnyFlatSpec with Matchers {
         size = expectedSize,
         color = lightColor.value,
         rankMark = None.orUndefined,
-        fileMark = Some("b").orUndefined,
+        fileMark = Some("b").orUndefined
       )
     )
 
-    Renderer.renderBoard(totalSizeInPx, someBoard) shouldEqual expected
+    Renderer.renderBoard(someBoard, boardDimens) shouldEqual expected
   }
 }
