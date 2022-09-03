@@ -4,6 +4,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import example.models.Vec2d
 import example.models.HexColor
+import scala.scalajs.js.JSConverters._
 
 class RendererSpec extends AnyFlatSpec with Matchers {
   val darkColor = HexColor("#000000")
@@ -33,22 +34,30 @@ class RendererSpec extends AnyFlatSpec with Matchers {
       TileObj(
         position = Vec2d(0, 0),
         size = expectedSize,
-        color = lightColor.value
+        color = lightColor.value,
+        rankMark = Some("2").orUndefined,
+        fileMark = None.orUndefined
       ),
       TileObj(
         position = Vec2d(100, 0),
         size = expectedSize,
-        color = darkColor.value
+        color = darkColor.value,
+        rankMark = None.orUndefined,
+        fileMark = None.orUndefined
       ),
       TileObj(
         position = Vec2d(0, 100),
         size = expectedSize,
-        color = darkColor.value
+        color = darkColor.value,
+        rankMark = Some("1").orUndefined,
+        fileMark = Some("a").orUndefined
       ),
       TileObj(
         position = Vec2d(100, 100),
         size = expectedSize,
-        color = lightColor.value
+        color = lightColor.value,
+        rankMark = None.orUndefined,
+        fileMark = Some("b").orUndefined,
       )
     )
 
