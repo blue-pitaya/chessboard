@@ -1,6 +1,7 @@
 package example
 
 import example.models.Vec2d
+import example.models.Vec2d._
 import example.models.HexColor
 import scala.scalajs.js.annotation._
 import scala.scalajs.js.JSConverters._
@@ -17,20 +18,25 @@ case class BoardDimens(logicSize: Vec2d, realSizeInPx: Vec2d)
 
 @JSExportAll
 case class TileObj(
+    id: String,
     position: Vec2d,
     size: Vec2d,
     color: String,
     fileMark: js.UndefOr[String],
     rankMark: js.UndefOr[String]
-)
+) extends DrawingObj
 
 @JSExportAll
 case class PieceObj(
-    position: Vec2d,
+    id: String,
+    basePosition: Vec2d,
+    draggingPosition: Vec2d,
     size: Vec2d,
     pieceColor: String,
     pieceKind: String
-)
+) extends Draggable {
+  def position: Vec2d = basePosition + draggingPosition
+}
 
 object Renderer {
   private def toRealPos(logicPos: Vec2d, boardDimens: BoardDimens): Vec2d = {
@@ -76,6 +82,7 @@ object Renderer {
       .tiles
       .map { case (pos, tile) =>
         TileObj(
+          id = IdGenerator.nextId,
           position = toRealPos(pos, boardDimens),
           size = size(boardDimens),
           color = tile.color.value,
@@ -93,7 +100,9 @@ object Renderer {
     pieces
       .map { case (pos, piece) =>
         PieceObj(
-          position = toRealPos(pos, boardDimens),
+          id = IdGenerator.nextId,
+          basePosition = toRealPos(pos, boardDimens),
+          draggingPosition = Vec2d.zero,
           size = size(boardDimens),
           pieceColor = piece.color.toString(),
           pieceKind = piece.kind.toString()

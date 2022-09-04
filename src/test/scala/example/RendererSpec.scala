@@ -34,6 +34,7 @@ class RendererSpec extends AnyFlatSpec with Matchers {
     val expectedSize = Vec2d(100, 100)
     val expected = Set(
       TileObj(
+        id = "a",
         position = Vec2d(0, 0),
         size = expectedSize,
         color = lightColor.value,
@@ -41,6 +42,7 @@ class RendererSpec extends AnyFlatSpec with Matchers {
         fileMark = None.orUndefined
       ),
       TileObj(
+        id = "a",
         position = Vec2d(100, 0),
         size = expectedSize,
         color = darkColor.value,
@@ -48,6 +50,7 @@ class RendererSpec extends AnyFlatSpec with Matchers {
         fileMark = None.orUndefined
       ),
       TileObj(
+        id = "a",
         position = Vec2d(0, 100),
         size = expectedSize,
         color = darkColor.value,
@@ -55,6 +58,7 @@ class RendererSpec extends AnyFlatSpec with Matchers {
         fileMark = Some("a").orUndefined
       ),
       TileObj(
+        id = "a",
         position = Vec2d(100, 100),
         size = expectedSize,
         color = lightColor.value,

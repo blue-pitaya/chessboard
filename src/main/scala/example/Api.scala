@@ -1,24 +1,61 @@
 package example
 
+import example.models.Vec2d
+
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.annotation._
-import scala.scalajs.js.annotation._
-import example.models.Vec2d
+
+@JSExportAll
+case class JsRenderedState(tiles: js.Array[TileObj], pieces: js.Array[PieceObj])
+
+@js.native
+trait JsVec2d extends js.Object {
+  def x: Int = js.native
+  def y: Int = js.native
+}
 
 object Api {
   import Settings._
 
-  @JSExportTopLevel("renderTiles")
-  def renderTiles(): js.Array[TileObj] = Renderer
-    .renderBoard(
-      Renderer.getTiles(boardDimens.logicSize, tileColorset),
-      boardDimens
-    )
-    .toJSArray
+  private def toVec2d(v: JsVec2d): Vec2d = Vec2d(v.x, v.y)
 
-  @JSExportTopLevel("renderPieces")
-  def renderPieces(): js.Array[PieceObj] = Renderer
+  private def renderTiles(): Set[TileObj] = Renderer.renderBoard(
+    Renderer.getTiles(boardDimens.logicSize, tileColorset),
+    boardDimens
+  )
+
+  private def renderPieces(): Set[PieceObj] = Renderer
     .renderPieces(Game.initPieces, boardDimens)
-    .toJSArray
+
+  // TODO: dragged piece on top!
+  private def jsState: JsRenderedState = JsRenderedState(
+    tiles = state.tileObjs.toSeq.sortBy(_.id).toJSArray,
+    pieces = state.pieceObjs.toSeq.sortBy(_.id).toJSArray
+  )
+
+  var state: RenderedState =
+    RenderedState(tileObjs = renderTiles(), pieceObjs = renderPieces())
+
+  @JSExportTopLevel("getState")
+  def getState(): JsRenderedState = jsState
+
+  @JSExportTopLevel("updateDraggingPosition")
+  def updateDraggingPosition(
+      obj: Draggable,
+      deltaPosition: JsVec2d
+  ): JsRenderedState = {
+    val action = Reducer.UpdateDraggingPosition(obj, toVec2d(deltaPosition))
+    state = Reducer.stateReduce(state, action)
+
+    getState()
+  }
+
+  @JSExportTopLevel("onEndDragging")
+  def onEndDragging(obj: Draggable): JsRenderedState = {
+    val action = Reducer.OnEndDragging(obj)
+    state = Reducer.stateReduce(state, action)
+
+    getState()
+  }
 }

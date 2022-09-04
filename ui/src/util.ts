@@ -6,7 +6,9 @@ export interface Vec2d {
 export const vec2dAsString = (v: Vec2d): string =>
   v.x.toString() + "_" + v.y.toString();
 
+//TODO: this is Tile proxy (dont mutate outside scala)
 export interface Tile {
+  id: string;
   position: Vec2d;
   size: Vec2d;
   color: string;
@@ -14,7 +16,9 @@ export interface Tile {
   rankMark?: string;
 }
 
+//TODO: this is Piece proxy
 export interface Piece {
+  id: string;
   position: Vec2d;
   size: Vec2d;
   pieceColor: string;

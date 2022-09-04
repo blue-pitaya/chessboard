@@ -1,18 +1,29 @@
 <script lang="ts" setup>
-import { renderTiles, renderPieces } from "@/scalajs/main";
-import { Tile, vec2dAsString, Piece, pieceToImageFilename } from "@/util";
+import { Piece, pieceToImageFilename, Vec2d } from "@/util";
 import TileComp from "./TileComp.vue";
 import PieceComp from "./PieceComp.vue";
+import { useState } from "@/state/useState";
+import { computed } from "vue";
+import { updateDraggingPosition, onEndDragging } from "@/scalajs/main";
 
-const tiles: Array<Tile> = renderTiles();
-const pieces: Array<Piece> = renderPieces();
+const { state, updateState } = useState();
+
+const tiles = computed(() => state.value.tiles);
+const pieces = computed(() => state.value.pieces);
+
+const onPieceDragged = (payload: { piece: Piece; deltaPos: Vec2d }) => {
+  updateState(updateDraggingPosition(payload.piece, payload.deltaPos));
+};
+const onPieceDragEnd = (payload: { piece: Piece }) => {
+  updateState(onEndDragging(payload.piece));
+};
 </script>
 
 <template>
   <svg>
     <TileComp
       v-for="t in tiles"
-      :key="vec2dAsString(t.position)"
+      :key="t.id"
       :position="t.position"
       :size="t.size"
       :color="t.color"
@@ -21,10 +32,13 @@ const pieces: Array<Piece> = renderPieces();
     />
     <PieceComp
       v-for="p in pieces"
-      :key="vec2dAsString(p.position)"
+      :key="p.id"
       :position="p.position"
       :size="p.size"
       :image-filename="pieceToImageFilename(p)"
+      :piece="p"
+      @piece-dragged="onPieceDragged"
+      @piec-drag-end="onPieceDragEnd"
     />
   </svg>
 </template>
