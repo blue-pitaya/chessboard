@@ -12,9 +12,6 @@ object Vec2d {
     .flatMap(x => (from.y to to.y).map(y => Vec2d(x, y)))
     .toList
 
-  def matrixUntil(from: Vec2d, until: Vec2d): List[Vec2d] =
-    matrix(from, until - Vec2d(1, 1))
-
   implicit class Vec2dExtensions(v: Vec2d) {
     def +(o: Vec2d): Vec2d = Vec2d(v.x + o.x, v.y + o.y)
 
@@ -23,5 +20,7 @@ object Vec2d {
     def *(card: Double): Vec2d = Vec2d((v.x * card).toInt, (v.y * card).toInt)
 
     def -(o: Vec2d): Vec2d = v + (o * -1)
+
+    def matrixUntil(until: Vec2d): List[Vec2d] = matrix(v, until - Vec2d(1, 1))
   }
 }

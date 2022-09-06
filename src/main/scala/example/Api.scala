@@ -20,22 +20,21 @@ object Api {
 
   private def toVec2d(v: JsVec2d): Vec2d = Vec2d(v.x, v.y)
 
-  private def renderTiles(): Set[TileObj] = Renderer.renderBoard(
+  private def renderTiles(): List[TileObj] = Renderer.renderBoard(
     Renderer.getTiles(boardDimens.logicSize, tileColorset),
     boardDimens
   )
 
-  private def renderPieces(): Set[PieceObj] = Renderer
+  private def renderPieces(): List[PieceObj] = Renderer
     .renderPieces(Game.initPieces, boardDimens)
 
-  // TODO: dragged piece on top!
   private def jsState: JsRenderedState = JsRenderedState(
-    tiles = state.tileObjs.toSeq.sortBy(_.id).toJSArray,
-    pieces = state.pieceObjs.toSeq.sortBy(_.id).toJSArray
+    tiles = state.tileObjs.toJSArray,
+    pieces = state.pieceObjs.toJSArray
   )
 
-  var state: RenderedState =
-    RenderedState(tileObjs = renderTiles(), pieceObjs = renderPieces())
+  var state: UiState =
+    UiState(tileObjs = renderTiles(), pieceObjs = renderPieces())
 
   @JSExportTopLevel("getState")
   def getState(): JsRenderedState = jsState
@@ -54,6 +53,14 @@ object Api {
   @JSExportTopLevel("onEndDragging")
   def onEndDragging(obj: Draggable): JsRenderedState = {
     val action = Reducer.OnEndDragging(obj)
+    state = Reducer.stateReduce(state, action)
+
+    getState()
+  }
+
+  @JSExportTopLevel("onStartDragging")
+  def onStartDragging(obj: Draggable): JsRenderedState = {
+    val action = Reducer.OnStartDragging(obj)
     state = Reducer.stateReduce(state, action)
 
     getState()

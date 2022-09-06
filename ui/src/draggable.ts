@@ -104,6 +104,7 @@ export function useDraggable(
       x: e.pageX,
       y: e.pageY,
     };
+    if (options.onStart?.(position.value, e) === false) return;
     handleEvent(e);
   };
   const move = (e: PointerEvent) => {

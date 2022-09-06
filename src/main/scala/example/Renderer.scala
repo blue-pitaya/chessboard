@@ -12,8 +12,6 @@ case class Tile(color: HexColor)
 
 case class TileColorset(dark: HexColor, light: HexColor)
 
-case class Board(tiles: Map[Vec2d, Tile])
-
 case class BoardDimens(logicSize: Vec2d, realSizeInPx: Vec2d)
 
 @JSExportAll
@@ -54,20 +52,21 @@ object Renderer {
     boardDimens.realSizeInPx.y / boardDimens.logicSize.y
   )
 
-  def getTiles(size: Vec2d, colorset: TileColorset): Board = {
-    val positions = Vec2d.matrixUntil(Vec2d.zero, size)
-    val tiles = positions
-      .map { p =>
-        val isDark = (p.x + p.y) % 2 == 0
-        val tile = Tile(color = if (isDark) colorset.dark else colorset.light)
-        (p -> tile)
-      }
-      .toMap
+  def getTiles(size: Vec2d, colorset: TileColorset): Map[Vec2d, Tile] = Vec2d
+    .zero
+    .matrixUntil(size)
+    .map { p =>
+      val isDark = (p.x + p.y) % 2 == 0
+      val tile = Tile(color = if (isDark) colorset.dark else colorset.light)
+      (p -> tile)
+    }
+    .toMap
 
-    Board(tiles = tiles)
-  }
-
-  def renderBoard(board: Board, boardDimens: BoardDimens): Set[TileObj] = {
+  // TODO: change name
+  def renderBoard(
+      tiles: Map[Vec2d, Tile],
+      boardDimens: BoardDimens
+  ): List[TileObj] = {
     def fileMark(position: Vec2d): Option[String] = position match {
       case Vec2d(x, 0) => Some(('a' + x).toChar.toString())
       case _           => None
@@ -78,8 +77,7 @@ object Renderer {
       case _           => None
     }
 
-    board
-      .tiles
+    tiles
       .map { case (pos, tile) =>
         TileObj(
           id = IdGenerator.nextId,
@@ -90,13 +88,13 @@ object Renderer {
           rankMark = rankMark(pos).orUndefined
         )
       }
-      .toSet
+      .toList
   }
 
   def renderPieces(
       pieces: Map[Vec2d, Piece],
       boardDimens: BoardDimens
-  ): Set[PieceObj] = {
+  ): List[PieceObj] = {
     pieces
       .map { case (pos, piece) =>
         PieceObj(
@@ -108,6 +106,6 @@ object Renderer {
           pieceKind = piece.kind.toString()
         )
       }
-      .toSet
+      .toList
   }
 }

@@ -4,18 +4,27 @@ import TileComp from "./TileComp.vue";
 import PieceComp from "./PieceComp.vue";
 import { useState } from "@/state/useState";
 import { computed } from "vue";
-import { updateDraggingPosition, onEndDragging } from "@/scalajs/main";
+import {
+  updateDraggingPosition,
+  onEndDragging,
+  onStartDragging,
+} from "@/scalajs/main";
 
 const { state, updateState } = useState();
 
 const tiles = computed(() => state.value.tiles);
-const pieces = computed(() => state.value.pieces);
+const pieces = computed(() => {
+  return state.value.pieces;
+});
 
 const onPieceDragged = (payload: { piece: Piece; deltaPos: Vec2d }) => {
   updateState(updateDraggingPosition(payload.piece, payload.deltaPos));
 };
 const onPieceDragEnd = (payload: { piece: Piece }) => {
   updateState(onEndDragging(payload.piece));
+};
+const onPieceDragStart = (payload: { piece: Piece }) => {
+  updateState(onStartDragging(payload.piece));
 };
 </script>
 
@@ -38,7 +47,8 @@ const onPieceDragEnd = (payload: { piece: Piece }) => {
       :image-filename="pieceToImageFilename(p)"
       :piece="p"
       @piece-dragged="onPieceDragged"
-      @piec-drag-end="onPieceDragEnd"
+      @piece-drag-end="onPieceDragEnd"
+      @piece-drag-start="onPieceDragStart"
     />
   </svg>
 </template>
