@@ -3,20 +3,21 @@ package example
 import example.models.Vec2d
 import example.models.Piece
 
-case class GameState(tiles: Map[Vec2d, Tile], pieces: Map[Vec2d, Piece])
+case class GameState(size: Vec2d, pieces: Map[Vec2d, Piece])
 
 object GlobalState {
   import Settings._
 
   private def toUiState(gameState: GameState): UiState = UiState(
-    tileObjs = Renderer.renderBoard(gameState.tiles, boardDimens),
+    tileObjs = Renderer.renderBoard(
+      Renderer.getTiles(gameState.size, tileColorset),
+      boardDimens
+    ),
     pieceObjs = Renderer.renderPieces(gameState.pieces, boardDimens)
   )
 
-  private var _gameState: GameState = GameState(
-    Renderer.getTiles(boardDimens.logicSize, tileColorset),
-    Game.initPieces
-  )
+  private var _gameState: GameState =
+    GameState(boardDimens.logicSize, Game.initPieces)
 
   def gameState: GameState = _gameState
 
