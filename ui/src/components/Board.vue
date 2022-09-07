@@ -3,11 +3,12 @@ import { Piece, pieceToImageFilename, Vec2d } from "@/util";
 import TileComp from "./TileComp.vue";
 import PieceComp from "./PieceComp.vue";
 import { useState } from "@/state/useState";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import {
   updateDraggingPosition,
   onEndDragging,
   onStartDragging,
+  onMouseMoveOnBoard,
 } from "@/scalajs/main";
 
 const { state, updateState } = useState();
@@ -26,13 +27,23 @@ const onPieceDragEnd = (payload: { piece: Piece }) => {
 const onPieceDragStart = (payload: { piece: Piece }) => {
   updateState(onStartDragging(payload.piece));
 };
+
+const onMouseMove = (e: any) => {
+  if (!e?.currentTarget) return;
+  const bounds = e.currentTarget.getBoundingClientRect();
+  const x = e.clientX - bounds.left;
+  const y = e.clientY - bounds.top;
+
+  updateState(onMouseMoveOnBoard({ x: Math.floor(x), y: Math.floor(y) }));
+};
 </script>
 
 <template>
-  <svg>
+  <svg @mousemove="onMouseMove">
     <TileComp
       v-for="t in tiles"
       :key="t.id"
+      :tile="t"
       :position="t.position"
       :size="t.size"
       :color="t.color"

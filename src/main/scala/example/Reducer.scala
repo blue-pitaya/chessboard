@@ -65,6 +65,18 @@ object Mutator {
       case _ => state
     }
   }
+
+  def highlightTile(state: UiState, tile: TileObj): UiState = {
+    val updatedTile = tile.copy(isHighlighted = true)
+    state.copy(tileObjs =
+      state
+        .tileObjs
+        .map { t =>
+          if (t.id == tile.id) t.copy(isHighlighted = true)
+          else t.copy(isHighlighted = false)
+        }
+    )
+  }
 }
 
 object Reducer {
@@ -73,6 +85,7 @@ object Reducer {
   final case class UpdateDraggingPosition(obj: Draggable, deltaPosition: Vec2d)
       extends Action
   final case class OnEndDragging(obj: Draggable) extends Action
+  final case class OnMouseMove(pos: Vec2d) extends Action
 
   def stateReduce(state: UiState, action: Action): UiState = action match {
     case OnStartDragging(obj) => Mutator.moveToBack(state, obj)
@@ -89,5 +102,10 @@ object Reducer {
           x.copy(basePosition = x.position, draggingPosition = Vec2d.zero)
       }
       Mutator.updateDrawingObj(state, updatedObj)
+
+    case OnMouseMove(pos) => Renderer
+        .getTileBound(state.tileObjs, pos)
+        .map(Mutator.highlightTile(state, _))
+        .getOrElse(state)
   }
 }

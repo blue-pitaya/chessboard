@@ -20,6 +20,7 @@ case class TileObj(
     position: Vec2d,
     size: Vec2d,
     color: String,
+    isHighlighted: Boolean,
     fileMark: js.UndefOr[String],
     rankMark: js.UndefOr[String]
 ) extends DrawingObj
@@ -62,6 +63,17 @@ object Renderer {
     }
     .toMap
 
+  // TODO:
+  def getTileBound(tiles: List[TileObj], pos: Vec2d): Option[TileObj] = tiles
+    .find { t =>
+      val left = t.position.x
+      val right = t.position.x + t.size.x
+      val top = t.position.y
+      val bottom = t.position.y + t.size.y
+
+      ((pos.x >= left) && (pos.x < right) && (pos.y >= top) && (pos.y < bottom))
+    }
+
   // TODO: change name
   def renderBoard(
       tiles: Map[Vec2d, Tile],
@@ -84,6 +96,7 @@ object Renderer {
           position = toRealPos(pos, boardDimens),
           size = size(boardDimens),
           color = tile.color.value,
+          isHighlighted = false,
           fileMark = fileMark(pos).orUndefined,
           rankMark = rankMark(pos).orUndefined
         )

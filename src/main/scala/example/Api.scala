@@ -65,4 +65,12 @@ object Api {
 
     getState()
   }
+
+  @JSExportTopLevel("onMouseMoveOnBoard")
+  def onMouseMoveOnBoard(position: JsVec2d): JsRenderedState = {
+    val action = Reducer.OnMouseMove(toVec2d(position))
+    state = Reducer.stateReduce(state, action)
+
+    getState()
+  }
 }

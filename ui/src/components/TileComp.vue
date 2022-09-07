@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-import { Vec2d } from "@/util";
+import { Tile, Vec2d } from "@/util";
 import { computed, defineProps } from "vue";
 
 const props = defineProps<{
+  tile: Tile;
   position: Vec2d;
   size: Vec2d;
   color: string;
@@ -13,6 +14,10 @@ const props = defineProps<{
 const transformString = computed(
   () => `translate(${props.position.x}, ${props.position.y})`
 );
+
+const fillColor = computed(() =>
+  props.tile.isHighlighted ? "purple" : props.color
+);
 </script>
 
 <template>
@@ -20,7 +25,7 @@ const transformString = computed(
     :transform="transformString"
     :width="size.x"
     :height="size.y"
-    :fill="color"
+    :fill="fillColor"
   />
   <foreignObject :transform="transformString" :width="size.x" :height="size.y">
     <div class="markContainer">
