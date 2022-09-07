@@ -3,8 +3,10 @@ export interface Vec2d {
   y: number;
 }
 
-export const vec2dAsString = (v: Vec2d): string =>
-  v.x.toString() + "_" + v.y.toString();
+export const normalizeVec2d = (v: Vec2d): Vec2d => ({
+  x: Math.floor(v.x),
+  y: Math.floor(v.y),
+});
 
 //TODO: this is Tile proxy (dont mutate outside scala)
 export interface Tile {

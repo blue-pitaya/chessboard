@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { Piece, pieceToImageFilename, Vec2d } from "@/util";
+import { Piece, pieceToImageFilename, Vec2d, normalizeVec2d } from "@/util";
 import TileComp from "./TileComp.vue";
 import PieceComp from "./PieceComp.vue";
 import { useState } from "@/state/useState";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import {
   updateDraggingPosition,
   onEndDragging,
@@ -17,11 +17,22 @@ const pieces = computed(() => {
   return state.value.pieces;
 });
 
+const boardContainer = ref<SVGElement>();
+const getPointerBoardPosition = (absolutePointerPos: Vec2d) => {
+  const bounds = boardContainer.value.getBoundingClientRect();
+  const x = absolutePointerPos.x - bounds.left;
+  const y = absolutePointerPos.y - bounds.top;
+
+  return normalizeVec2d({ x, y });
+};
+
 const onPieceDragged = (payload: { piece: Piece; deltaPos: Vec2d }) => {
   updateState(updateDraggingPosition(payload.piece, payload.deltaPos));
 };
-const onPieceDragEnd = (payload: { piece: Piece }) => {
-  updateState(onEndDragging(payload.piece));
+const onPieceDragEnd = (payload: { piece: Piece; pointerPos: Vec2d }) => {
+  updateState(
+    onEndDragging(payload.piece, getPointerBoardPosition(payload.pointerPos))
+  );
 };
 const onPieceDragStart = (payload: { piece: Piece }) => {
   updateState(onStartDragging(payload.piece));
@@ -29,7 +40,7 @@ const onPieceDragStart = (payload: { piece: Piece }) => {
 </script>
 
 <template>
-  <svg>
+  <svg ref="boardContainer">
     <TileComp
       v-for="t in tiles"
       :key="t.id"

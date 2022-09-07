@@ -65,7 +65,11 @@ export interface UseDraggableOptions {
   /**
    * Callback when dragging end.
    */
-  onEnd?: (position: Position, event: PointerEvent) => void;
+  onEnd?: (
+    position: Position,
+    pointerPos: Position,
+    event: PointerEvent
+  ) => void;
 }
 
 /**
@@ -121,7 +125,11 @@ export function useDraggable(
     if (!filterEvent(e)) return;
     if (!pressedDelta.value) return;
     pressedDelta.value = undefined;
-    options.onEnd?.(position.value, e);
+    const pointerPos = {
+      x: e.pageX,
+      y: e.pageY,
+    };
+    options.onEnd?.(position.value, pointerPos, e);
     handleEvent(e);
   };
 

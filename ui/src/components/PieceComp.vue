@@ -12,7 +12,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "pieceDragged", payload: { piece: Piece; deltaPos: Vec2d }): void;
-  (e: "pieceDragEnd", payload: { piece: Piece }): void;
+  (e: "pieceDragEnd", payload: { piece: Piece; pointerPos: Vec2d }): void;
   (e: "pieceDragStart", payload: { piece: Piece }): void;
 }>();
 
@@ -28,8 +28,8 @@ useDraggable(
     onMove: (deltaPos: Vec2d) => {
       emit("pieceDragged", { piece: props.piece, deltaPos });
     },
-    onEnd: () => {
-      emit("pieceDragEnd", { piece: props.piece });
+    onEnd: (_, pointerPos) => {
+      emit("pieceDragEnd", { piece: props.piece, pointerPos });
     },
     onStart: () => {
       emit("pieceDragStart", { piece: props.piece });

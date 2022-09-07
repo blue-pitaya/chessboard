@@ -27,6 +27,7 @@ case class TileObj(
 @JSExportAll
 case class PieceObj(
     id: String,
+    gamePosition: Vec2d,
     basePosition: Vec2d,
     draggingPosition: Vec2d,
     size: Vec2d,
@@ -37,8 +38,13 @@ case class PieceObj(
 }
 
 object Renderer {
+  private def getTileSize(boardDimens: BoardDimens): Vec2d = Vec2d(
+    boardDimens.realSizeInPx.x / boardDimens.logicSize.x,
+    boardDimens.realSizeInPx.y / boardDimens.logicSize.y
+  )
+
   private def toRealPos(logicPos: Vec2d, boardDimens: BoardDimens): Vec2d = {
-    val tileSize = size(boardDimens)
+    val tileSize = getTileSize(boardDimens)
     val xInPx = logicPos.x * tileSize.x
     // note: board positions and render positions has opposite y axis
     val yInPx = boardDimens.realSizeInPx.y - tileSize.y -
@@ -46,11 +52,6 @@ object Renderer {
 
     Vec2d(xInPx, yInPx)
   }
-
-  private def size(boardDimens: BoardDimens): Vec2d = Vec2d(
-    boardDimens.realSizeInPx.x / boardDimens.logicSize.x,
-    boardDimens.realSizeInPx.y / boardDimens.logicSize.y
-  )
 
   def getTiles(size: Vec2d, colorset: TileColorset): Map[Vec2d, Tile] = Vec2d
     .zero
@@ -61,6 +62,11 @@ object Renderer {
       (p -> tile)
     }
     .toMap
+
+  def toLogicPostion(pos: Vec2d, boardDimens: BoardDimens): Vec2d = Vec2d(
+    pos.x / getTileSize(boardDimens).x,
+    (boardDimens.realSizeInPx.y - pos.y) / getTileSize(boardDimens).y
+  )
 
   // TODO: change name
   def renderBoard(
@@ -82,7 +88,7 @@ object Renderer {
         TileObj(
           id = IdGenerator.nextId,
           position = toRealPos(pos, boardDimens),
-          size = size(boardDimens),
+          size = getTileSize(boardDimens),
           color = tile.color.value,
           fileMark = fileMark(pos).orUndefined,
           rankMark = rankMark(pos).orUndefined
@@ -99,9 +105,10 @@ object Renderer {
       .map { case (pos, piece) =>
         PieceObj(
           id = IdGenerator.nextId,
+          gamePosition = pos,
           basePosition = toRealPos(pos, boardDimens),
           draggingPosition = Vec2d.zero,
-          size = size(boardDimens),
+          size = getTileSize(boardDimens),
           pieceColor = piece.color.toString(),
           pieceKind = piece.kind.toString()
         )

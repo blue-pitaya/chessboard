@@ -49,6 +49,22 @@ object Mutator {
     } yield (updatedState)).getOrElse(state)
   }
 
+  // TODO: move piece
+  def updatePiece(
+      gameState: GameState,
+      pieceObj: PieceObj,
+      newPosition: Vec2d
+  ): GameState = {
+    val oldPosition = pieceObj.gamePosition
+    (for {
+      piece <- gameState.pieces.get(oldPosition)
+      nextPieces = gameState
+        .pieces
+        .removed(oldPosition)
+        .updated(newPosition, piece)
+    } yield (gameState.copy(pieces = nextPieces))).getOrElse(gameState)
+  }
+
   private def moveToBackList[T <: DrawingObj](
       list: List[T],
       obj: T
@@ -57,6 +73,7 @@ object Mutator {
     rest = list.filter(o => o.id != obj.id)
   } yield (rest :+ x)
 
+  // TODO: better name
   def moveToBack(state: UiState, obj: DrawingObj): UiState = {
     obj match {
       case x: PieceObj => state.copy(pieceObjs =
@@ -72,22 +89,32 @@ object Reducer {
   final case class OnStartDragging(obj: Draggable) extends Action
   final case class UpdateDraggingPosition(obj: Draggable, deltaPosition: Vec2d)
       extends Action
-  final case class OnEndDragging(obj: Draggable) extends Action
+  final case class OnEndDragging(obj: Draggable, pointerPosition: Vec2d)
+      extends Action
 
-  def stateReduce(state: UiState, action: Action): UiState = action match {
-    case OnStartDragging(obj) => Mutator.moveToBack(state, obj)
+  def stateReduce(
+      uiState: UiState,
+      gameState: GameState,
+      action: Action
+  ): UiState = action match {
+    case OnStartDragging(obj) => Mutator.moveToBack(uiState, obj)
 
     case UpdateDraggingPosition(obj, deltaPosition) =>
       val updatedObj = obj match {
         case x: PieceObj => x.copy(draggingPosition = deltaPosition)
       }
-      Mutator.updateDrawingObj(state, updatedObj)
+      Mutator.updateDrawingObj(uiState, updatedObj)
 
-    case OnEndDragging(obj) =>
-      val updatedObj = obj match {
-        case x: PieceObj =>
-          x.copy(basePosition = x.position, draggingPosition = Vec2d.zero)
+    case OnEndDragging(obj, pointerPosition) => obj match {
+      case x: PieceObj =>
+          val newPosition = Renderer
+            .toLogicPostion(pointerPosition, Settings.boardDimens)
+          val nextGameState = Mutator.updatePiece(gameState, x, newPosition)
+          GlobalState.updateGameState(nextGameState)
+
+        case _ =>
+          println("error!")
+          uiState
       }
-      Mutator.updateDrawingObj(state, updatedObj)
   }
 }
