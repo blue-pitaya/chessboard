@@ -55,7 +55,11 @@ export interface UseDraggableOptions {
   /**
    * Callback when the dragging starts. Return `false` to prevent dragging.
    */
-  onStart?: (position: Position, event: PointerEvent) => void | false;
+  onStart?: (
+    position: Position,
+    pointerPos: Position,
+    event: PointerEvent
+  ) => void | false;
 
   /**
    * Callback during dragging.
@@ -108,7 +112,8 @@ export function useDraggable(
       x: e.pageX,
       y: e.pageY,
     };
-    if (options.onStart?.(position.value, e) === false) return;
+    if (options.onStart?.(position.value, pressedDelta.value, e) === false)
+      return;
     handleEvent(e);
   };
   const move = (e: PointerEvent) => {

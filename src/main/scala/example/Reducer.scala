@@ -86,7 +86,8 @@ object Mutator {
 
 object Reducer {
   sealed trait Action
-  final case class OnStartDragging(obj: Draggable) extends Action
+  final case class OnStartDragging(obj: Draggable, pointerPosition: Vec2d)
+      extends Action
   final case class UpdateDraggingPosition(obj: Draggable, deltaPosition: Vec2d)
       extends Action
   final case class OnEndDragging(obj: Draggable, pointerPosition: Vec2d)
@@ -97,21 +98,32 @@ object Reducer {
       gameState: GameState,
       action: Action
   ): UiState = action match {
-    case OnStartDragging(obj) => Mutator.moveToBack(uiState, obj)
-
-    case UpdateDraggingPosition(obj, deltaPosition) =>
-      val updatedObj = obj match {
-        case x: PieceObj => x.copy(draggingPosition = deltaPosition)
+    case OnStartDragging(obj, pointerPosition) => obj match {
+        case x: PieceObj =>
+          val updatedObj = x
+            .copy(basePosition = (pointerPosition - (x.size * 0.5)))
+          val nextState = Mutator.updateDrawingObj(uiState, updatedObj)
+          Mutator.moveToBack(nextState, obj)
+        case _ =>
+          println("error")
+          uiState
       }
-      Mutator.updateDrawingObj(uiState, updatedObj)
+
+    case UpdateDraggingPosition(obj, deltaPosition) => obj match {
+        case x: PieceObj =>
+          val updatedObj = x.copy(draggingPosition = deltaPosition)
+          Mutator.updateDrawingObj(uiState, updatedObj)
+        case _ =>
+          println("error")
+          uiState
+      }
 
     case OnEndDragging(obj, pointerPosition) => obj match {
-      case x: PieceObj =>
+        case x: PieceObj =>
           val newPosition = Renderer
             .toLogicPostion(pointerPosition, Settings.boardDimens)
           val nextGameState = Mutator.updatePiece(gameState, x, newPosition)
           GlobalState.updateGameState(nextGameState)
-
         case _ =>
           println("error!")
           uiState

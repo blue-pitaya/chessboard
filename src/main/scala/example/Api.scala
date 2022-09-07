@@ -52,8 +52,11 @@ object Api {
   }
 
   @JSExportTopLevel("onStartDragging")
-  def onStartDragging(obj: Draggable): JsRenderedState = {
-    val action = Reducer.OnStartDragging(obj)
+  def onStartDragging(
+      obj: Draggable,
+      pointerPosition: JsVec2d
+  ): JsRenderedState = {
+    val action = Reducer.OnStartDragging(obj, toVec2d(pointerPosition))
     uiState = Reducer.stateReduce(uiState, gameState, action)
 
     getState()

@@ -34,8 +34,10 @@ const onPieceDragEnd = (payload: { piece: Piece; pointerPos: Vec2d }) => {
     onEndDragging(payload.piece, getPointerBoardPosition(payload.pointerPos))
   );
 };
-const onPieceDragStart = (payload: { piece: Piece }) => {
-  updateState(onStartDragging(payload.piece));
+const onPieceDragStart = (payload: { piece: Piece; pointerPos: Vec2d }) => {
+  updateState(
+    onStartDragging(payload.piece, getPointerBoardPosition(payload.pointerPos))
+  );
 };
 </script>
 
