@@ -104,7 +104,30 @@ object PossibleMoves {
     state.pieces.get(pos).map(p => p.color != color).getOrElse(true)
   )
 
-  private def pawnMoves(pos: Vec2d, state: GameState): Set[Vec2d] = ???
+  private def pawnMoves(
+      pos: Vec2d,
+      color: PieceColor,
+      state: GameState
+  ): Set[Vec2d] = {
+    val attackMoves = pawnAttacks(pos, color, state).filter(p =>
+      state.pieces.get(p).map(p => p.color != color).getOrElse(false)
+    )
+
+    val step = if (color == White) Vec2d(0, 1) else Vec2d(0, -1)
+    def canMove(v: Vec2d) = isInsideBoard(state.size)(v) &&
+      !state.pieces.get(v).isDefined
+    val moveOneTile = pos + step
+    val regularMoves = if (canMove(moveOneTile)) Seq(moveOneTile) else Seq()
+
+    val isOnStartingFile = if (color == White) pos.y == 1 else pos.y == 6
+    val moveTwoTiles = pos + (step * 2)
+    val doubleMoves =
+      if (isOnStartingFile && canMove(moveOneTile) && canMove(moveTwoTiles))
+        Seq(moveTwoTiles)
+      else Seq()
+
+    (attackMoves ++ regularMoves ++ doubleMoves).toSet
+  }
 
   private def kingMoves(
       pos: Vec2d,
@@ -122,6 +145,6 @@ object PossibleMoves {
       case King => kingMoves(pos, piece.color, state)
       case _: MajorPieceType =>
         movesFromAttacks(getAttacks(pos, piece, state), piece.color, state)
-      case Pawn => pawnMoves(pos, state)
+      case Pawn => pawnMoves(pos, piece.color, state)
     }
 }

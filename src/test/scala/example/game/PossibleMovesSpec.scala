@@ -20,7 +20,7 @@ import scala.scalajs.js.JSConverters._
 class RendererSpec extends AnyFlatSpec with Matchers {
   val boardSize: Vec2d = Vec2d(8, 8)
 
-  "knightMoves" should "be in shape of L" in {
+  "knight moves" should "be in shape of L" in {
     val piece = Piece(Knight, White)
     val state = GameState(
       size = boardSize,
@@ -43,7 +43,7 @@ class RendererSpec extends AnyFlatSpec with Matchers {
     PossibleMoves.getMoves(Vec2d(4, 3), piece, state) shouldEqual expected
   }
 
-  "bishopMoves" should "be diagonal and blocked by pieces" in {
+  "bishop moves" should "be diagonal and blocked by pieces" in {
     val piece = Piece(Bishop, White)
     val state = GameState(
       size = Vec2d(5, 4),
@@ -59,7 +59,7 @@ class RendererSpec extends AnyFlatSpec with Matchers {
     PossibleMoves.getMoves(Vec2d(2, 1), piece, state) shouldEqual expected
   }
 
-  "rookMoves" should "be straight and blocked by pieces" in {
+  "rook moves" should "be straight and blocked by pieces" in {
     val piece = Piece(Rook, White)
     val state = GameState(
       size = Vec2d(4, 4),
@@ -75,7 +75,7 @@ class RendererSpec extends AnyFlatSpec with Matchers {
     PossibleMoves.getMoves(Vec2d(2, 1), piece, state) shouldEqual expected
   }
 
-  "queenMoves" should "be straight, diagonal and blocked by pieces" in {
+  "queen moves" should "be straight, diagonal and blocked by pieces" in {
     val piece = Piece(Queen, White)
     val state = GameState(
       size = Vec2d(4, 4),
@@ -99,6 +99,63 @@ class RendererSpec extends AnyFlatSpec with Matchers {
     )
 
     PossibleMoves.getMoves(Vec2d(2, 1), piece, state) shouldEqual expected
+  }
+
+  // starting file in real board (files 1..8) is 2 for white and 7 for black
+  "pawn" should "be able to move 2 tiles on starting file" in {
+    val pos = Vec2d(0, 1)
+    val piece = Piece(Pawn, White)
+    val state = GameState(size = Vec2d(1, 4), pieces = Map(pos -> piece))
+    val expected = Set(Vec2d(0, 2), Vec2d(0, 3))
+
+    PossibleMoves.getMoves(pos, piece, state) shouldEqual expected
+  }
+
+  "pawn" should
+    "not be able to move 2 tiles on starting file if path is blocked" in {
+      val pos = Vec2d(0, 1)
+      val piece = Piece(Pawn, White)
+      val state = GameState(
+        size = Vec2d(1, 4),
+        pieces = Map(pos -> piece, Vec2d(0, 2) -> Piece(Pawn, Black))
+      )
+      val expected = Set()
+
+      PossibleMoves.getMoves(pos, piece, state) shouldEqual expected
+    }
+
+  "pawn regular moves" should "be 1 to front" in {
+    val pos = Vec2d(0, 5)
+    val piece = Piece(Pawn, Black)
+    val state = GameState(size = Vec2d(1, 8), pieces = Map(pos -> piece))
+    val expected = Set(Vec2d(0, 4))
+
+    PossibleMoves.getMoves(pos, piece, state) shouldEqual expected
+  }
+
+  "pawn regular moves" should "include possible attacks" in {
+    val pos = Vec2d(0, 2)
+    val piece = Piece(Pawn, White)
+    val state = GameState(
+      size = Vec2d(2, 8),
+      pieces = Map(pos -> piece, Vec2d(1, 3) -> Piece(Pawn, Black))
+    )
+    val expected = Set(Vec2d(0, 3), Vec2d(1, 3))
+
+    PossibleMoves.getMoves(pos, piece, state) shouldEqual expected
+  }
+
+  "pawn" should "be able to do en passant" in {
+    // TODO:
+  }
+
+  "pawn" should "not be able to go outside board" in {
+    val pos = Vec2d(0, 7)
+    val piece = Piece(Pawn, White)
+    val state = GameState(size = Vec2d(1, 8), pieces = Map(pos -> piece))
+    val expected = Set()
+
+    PossibleMoves.getMoves(pos, piece, state) shouldEqual expected
   }
 
   "king" should "not be able to walk to other king" in {
