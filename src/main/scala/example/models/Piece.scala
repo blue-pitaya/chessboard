@@ -19,4 +19,6 @@ final case object Black extends PieceColor {
   override def opposite: PieceColor = White
 }
 
-case class Piece(kind: PieceKind, color: PieceColor)
+case class Piece(kind: PieceKind, color: PieceColor) {
+  def isMajor = Set(Rook, Knight, Bishop, Queen).exists(_ == kind)
+}

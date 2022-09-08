@@ -65,7 +65,7 @@ class RendererSpec extends AnyFlatSpec with Matchers {
       )
     )
 
-  // TODO: IdGenerator injection
-    //Renderer.renderBoard(someTiles, boardDimens) shouldEqual expected
+    // TODO: IdGenerator injection
+    // Renderer.renderBoard(someTiles, boardDimens) shouldEqual expected
   }
 }
