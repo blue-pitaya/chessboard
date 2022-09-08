@@ -3,7 +3,13 @@ package example
 import example.models.Vec2d
 import example.models.Piece
 
-case class GameState(size: Vec2d, pieces: Map[Vec2d, Piece])
+case class Move(piece: Piece, from: Vec2d, to: Vec2d)
+
+case class GameState(
+    size: Vec2d,
+    pieces: Map[Vec2d, Piece],
+    lastMove: Option[Move] = None
+)
 
 object GlobalState {
   import Settings._

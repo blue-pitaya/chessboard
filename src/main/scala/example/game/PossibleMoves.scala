@@ -109,16 +109,19 @@ object PossibleMoves {
       color: PieceColor,
       state: GameState
   ): Set[Vec2d] = {
+    // attack
     val attackMoves = pawnAttacks(pos, color, state).filter(p =>
       state.pieces.get(p).map(p => p.color != color).getOrElse(false)
     )
 
+    // 1 up
     val step = if (color == White) Vec2d(0, 1) else Vec2d(0, -1)
     def canMove(v: Vec2d) = isInsideBoard(state.size)(v) &&
       !state.pieces.get(v).isDefined
     val moveOneTile = pos + step
     val regularMoves = if (canMove(moveOneTile)) Seq(moveOneTile) else Seq()
 
+    // 2 up
     val isOnStartingFile = if (color == White) pos.y == 1 else pos.y == 6
     val moveTwoTiles = pos + (step * 2)
     val doubleMoves =
@@ -126,9 +129,27 @@ object PossibleMoves {
         Seq(moveTwoTiles)
       else Seq()
 
-    (attackMoves ++ regularMoves ++ doubleMoves).toSet
+    // en passant
+    val enPassantMoves = state
+      .lastMove
+      .map { move =>
+        val lastMoveIsNearPawnDoubleUp = move.piece.kind == Pawn &&
+          Math.abs(move.from.y - move.to.y) == 2 &&
+          Math.abs(pos.x - move.to.x) == 1
+
+        lazy val attackStep = color match {
+          case Black => Vec2d(move.to.x - pos.x, -1)
+          case White => Vec2d(move.to.x - pos.x, 1)
+        }
+
+        if (lastMoveIsNearPawnDoubleUp) Seq(pos + attackStep) else Seq()
+      }
+      .getOrElse(Seq())
+
+    (attackMoves ++ regularMoves ++ doubleMoves ++ enPassantMoves).toSet
   }
 
+  // TODO: king is under check
   private def kingMoves(
       pos: Vec2d,
       color: PieceColor,

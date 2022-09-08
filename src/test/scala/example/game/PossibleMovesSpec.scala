@@ -16,6 +16,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import scala.scalajs.js.JSConverters._
+import example.Move
 
 class RendererSpec extends AnyFlatSpec with Matchers {
   val boardSize: Vec2d = Vec2d(8, 8)
@@ -145,8 +146,30 @@ class RendererSpec extends AnyFlatSpec with Matchers {
     PossibleMoves.getMoves(pos, piece, state) shouldEqual expected
   }
 
-  "pawn" should "be able to do en passant" in {
-    // TODO:
+  "white pawn" should "be able to do en passant" in {
+    val pos = Vec2d(1, 4)
+    val piece = Piece(Pawn, White)
+    val state = GameState(
+      size = Vec2d(8, 8),
+      pieces = Map(pos -> piece, Vec2d(2, 4) -> Piece(Pawn, Black)),
+      lastMove = Some(Move(Piece(Pawn, Black), Vec2d(2, 6), Vec2d(2, 4)))
+    )
+    val expected = Set(Vec2d(1, 5), Vec2d(2, 5))
+
+    PossibleMoves.getMoves(pos, piece, state) shouldEqual expected
+  }
+
+  "black pawn" should "be able to do en passant" in {
+    val pos = Vec2d(1, 3)
+    val piece = Piece(Pawn, Black)
+    val state = GameState(
+      size = Vec2d(8, 8),
+      pieces = Map(pos -> piece, Vec2d(0, 3) -> Piece(Pawn, White)),
+      lastMove = Some(Move(Piece(Pawn, White), Vec2d(0, 1), Vec2d(0, 3)))
+    )
+    val expected = Set(Vec2d(0, 2), Vec2d(1, 2))
+
+    PossibleMoves.getMoves(pos, piece, state) shouldEqual expected
   }
 
   "pawn" should "not be able to go outside board" in {
