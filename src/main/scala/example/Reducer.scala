@@ -89,8 +89,7 @@ object Mutator {
       state
         .tileObjs
         .map(t =>
-          if (positions.contains(t.gamePosition)) t.copy(isMarked = true)
-          else t
+          if (positions.contains(t.gamePosition)) t.copy(isMarked = true) else t
         )
     )
 
@@ -140,9 +139,15 @@ object Reducer {
         case x: PieceObj =>
           val newPosition = Renderer
             .toLogicPostion(pointerPosition, Settings.boardDimens)
-          val nextGameState = Mutator.updatePiece(gameState, x, newPosition)
-          val nextUiState = GlobalState.updateGameState(nextGameState)
-          Mutator.unhighlightTiles(nextUiState)
+          val possibleMoves = PossibleMoves.getMoves(x.gamePosition, gameState)
+          if (possibleMoves.contains(newPosition)) {
+            val nextGameState = Mutator.updatePiece(gameState, x, newPosition)
+            val nextUiState = GlobalState.updateGameState(nextGameState)
+            Mutator.unhighlightTiles(nextUiState)
+          } else {
+            val nextUiState = GlobalState.updateGameState(gameState)
+            Mutator.unhighlightTiles(nextUiState)
+          }
         case _ =>
           println("error!")
           uiState
