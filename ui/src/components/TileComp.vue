@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { Vec2d } from "@/util";
+import { Tile, Vec2d } from "@/util";
 import { computed, defineProps } from "vue";
 
 const props = defineProps<{
@@ -8,10 +8,15 @@ const props = defineProps<{
   color: string;
   fileMark?: string;
   rankMark?: string;
+  isHighlighted: boolean;
 }>();
 
 const transformString = computed(
   () => `translate(${props.position.x}, ${props.position.y})`
+);
+
+const fillColor = computed(() =>
+  props.isHighlighted ? "purple" : props.color
 );
 </script>
 
@@ -20,7 +25,7 @@ const transformString = computed(
     :transform="transformString"
     :width="size.x"
     :height="size.y"
-    :fill="color"
+    :fill="fillColor"
   />
   <foreignObject :transform="transformString" :width="size.x" :height="size.y">
     <div class="markContainer">

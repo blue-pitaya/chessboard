@@ -9,6 +9,7 @@ export const normalizeVec2d = (v: Vec2d): Vec2d => ({
 });
 
 //TODO: this is Tile proxy (dont mutate outside scala)
+//TODO: move it to state dir
 export interface Tile {
   id: string;
   position: Vec2d;
@@ -16,6 +17,7 @@ export interface Tile {
   color: string;
   fileMark?: string;
   rankMark?: string;
+  isHighlighted: boolean;
 }
 
 //TODO: this is Piece proxy

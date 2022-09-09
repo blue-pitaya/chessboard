@@ -6,6 +6,7 @@ import example.models.Piece
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.annotation._
+import example.game.PossibleMoves
 
 trait DrawingObj {
   def id: String
@@ -23,7 +24,7 @@ case class UiState(tileObjs: List[TileObj], pieceObjs: List[PieceObj])
 
 case class InternalState(tiles: Map[Vec2d, Tile], pieces: Map[Vec2d, Piece])
 
-//TODO: lenses?
+//TODO: lenses and/or compoanion object of UiState :)
 object Mutator {
   private def getDrawingObj(state: UiState, id: String): Option[DrawingObj] = {
     lazy val tileObjOpt = state.tileObjs.find(_.id == id)
@@ -82,6 +83,19 @@ object Mutator {
       case _ => state
     }
   }
+
+  def highlightTiles(state: UiState, positions: Set[Vec2d]): UiState = state
+    .copy(tileObjs =
+      state
+        .tileObjs
+        .map(t =>
+          if (positions.contains(t.gamePosition)) t.copy(isHighlighted = true)
+          else t
+        )
+    )
+
+  def unhighlightTiles(state: UiState): UiState = state
+    .copy(tileObjs = state.tileObjs.map(_.copy(isHighlighted = false)))
 }
 
 object Reducer {
@@ -102,8 +116,12 @@ object Reducer {
         case x: PieceObj =>
           val updatedObj = x
             .copy(basePosition = (pointerPosition - (x.size * 0.5)))
+          val possibleMoves = PossibleMoves.getMoves(x.gamePosition, gameState)
+
+          // TODO: function composition
           val nextState = Mutator.updateDrawingObj(uiState, updatedObj)
-          Mutator.moveToBack(nextState, obj)
+          val nextState2 = Mutator.highlightTiles(nextState, possibleMoves)
+          Mutator.moveToBack(nextState2, obj)
         case _ =>
           println("error")
           uiState
@@ -123,7 +141,8 @@ object Reducer {
           val newPosition = Renderer
             .toLogicPostion(pointerPosition, Settings.boardDimens)
           val nextGameState = Mutator.updatePiece(gameState, x, newPosition)
-          GlobalState.updateGameState(nextGameState)
+          val nextUiState = GlobalState.updateGameState(nextGameState)
+          Mutator.unhighlightTiles(nextUiState)
         case _ =>
           println("error!")
           uiState

@@ -17,23 +17,23 @@ object PossibleMoves {
       stop: Vec2d => Boolean,
       stopBefore: Vec2d => Boolean,
       acc: Set[Vec2d] = Set()
-  ): Set[Vec2d] =
-    if (stop(pos)) acc + pos
-    else {
-      val nextPos = pos + step
-      val stopNow = stopBefore(nextPos)
-      if (stopNow) acc + pos
-      else moveStep(nextPos, step, stop, stopBefore, acc + pos)
-    }
+  ): Set[Vec2d] = {
+    lazy val currentAcc = acc + pos
+    lazy val nextPos = pos + step
+
+    if (stop(pos)) currentAcc
+    else if (stopBefore(nextPos)) currentAcc
+    else moveStep(nextPos, step, stop, stopBefore, currentAcc)
+  }
 
   private def lineAttacks(
       pos: Vec2d,
       step: Vec2d,
       state: GameState
   ): Set[Vec2d] = {
-    val stop = (v: Vec2d) => state.pieces.get(v).isDefined
+    val stop = (v: Vec2d) => state.pieces.get(v).isDefined && v != pos
     val stopBefore = (v: Vec2d) => !isInsideBoard(state.size)(v)
-    moveStep(pos + step, step, stop, stopBefore)
+    moveStep(pos, step, stop, stopBefore) - pos
   }
 
   private def knightAttacks(pos: Vec2d, state: GameState): Set[Vec2d] = {
@@ -168,4 +168,10 @@ object PossibleMoves {
         movesFromAttacks(getAttacks(pos, piece, state), piece.color, state)
       case Pawn => pawnMoves(pos, piece.color, state)
     }
+
+  def getMoves(pos: Vec2d, state: GameState): Set[Vec2d] = state
+    .pieces
+    .get(pos)
+    .map(getMoves(pos, _, state))
+    .getOrElse(Set())
 }

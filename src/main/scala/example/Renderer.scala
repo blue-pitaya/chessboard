@@ -10,18 +10,25 @@ import example.models.Piece
 
 case class Tile(color: HexColor)
 
-case class TileColorset(dark: HexColor, light: HexColor)
+case class TileColorset(
+    dark: HexColor,
+    light: HexColor,
+    markedDark: HexColor,
+    markedLight: HexColor
+)
 
 case class BoardDimens(logicSize: Vec2d, realSizeInPx: Vec2d)
 
 @JSExportAll
 case class TileObj(
     id: String,
+    gamePosition: Vec2d,
     position: Vec2d,
     size: Vec2d,
     color: String,
     fileMark: js.UndefOr[String],
-    rankMark: js.UndefOr[String]
+    rankMark: js.UndefOr[String],
+    isHighlighted: Boolean
 ) extends DrawingObj
 
 @JSExportAll
@@ -87,11 +94,13 @@ object Renderer {
       .map { case (pos, tile) =>
         TileObj(
           id = IdGenerator.nextId,
+          gamePosition = pos,
           position = toRealPos(pos, boardDimens),
           size = getTileSize(boardDimens),
           color = tile.color.value,
           fileMark = fileMark(pos).orUndefined,
-          rankMark = rankMark(pos).orUndefined
+          rankMark = rankMark(pos).orUndefined,
+          isHighlighted = false
         )
       }
       .toList

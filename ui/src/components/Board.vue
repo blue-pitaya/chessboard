@@ -51,6 +51,7 @@ const onPieceDragStart = (payload: { piece: Piece; pointerPos: Vec2d }) => {
       :color="t.color"
       :file-mark="t.fileMark"
       :rank-mark="t.rankMark"
+      :is-highlighted="t.isHighlighted"
     />
     <PieceComp
       v-for="p in pieces"

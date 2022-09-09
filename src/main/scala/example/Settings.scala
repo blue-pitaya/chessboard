@@ -12,5 +12,5 @@ object Settings {
     BoardDimens(logicSize = boardSize, realSizeInPx = boardSizeInPx)
 
   val tileColorset =
-    TileColorset(dark = HexColor("#b58863"), light = HexColor("#f0d9b5"))
+    TileColorset(dark = HexColor("#b58863"), light = HexColor("#f0d9b5"), markedDark = HexColor("#9b6273"), markedLight = HexColor("#c19f9d"))
 }

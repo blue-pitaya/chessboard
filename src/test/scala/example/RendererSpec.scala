@@ -20,7 +20,7 @@ class RendererSpec extends AnyFlatSpec with Matchers {
     BoardDimens(logicSize = Vec2d(2, 2), realSizeInPx = Vec2d(200, 200))
 
   "getTiles" should "be ok" in {
-    val colorset = TileColorset(darkColor, lightColor)
+    val colorset = Settings.tileColorset
     val size = Vec2d(2, 2)
     val expected = someTiles
 
@@ -33,35 +33,43 @@ class RendererSpec extends AnyFlatSpec with Matchers {
     val expected = Set(
       TileObj(
         id = "a",
+        gamePosition = Vec2d(0, 0),
         position = Vec2d(0, 0),
         size = expectedSize,
         color = lightColor.value,
         rankMark = Some("2").orUndefined,
-        fileMark = None.orUndefined
+        fileMark = None.orUndefined,
+        isHighlighted = false
       ),
       TileObj(
         id = "a",
+        gamePosition = Vec2d(0, 0),
         position = Vec2d(100, 0),
         size = expectedSize,
         color = darkColor.value,
         rankMark = None.orUndefined,
-        fileMark = None.orUndefined
+        fileMark = None.orUndefined,
+        isHighlighted = false
       ),
       TileObj(
         id = "a",
+        gamePosition = Vec2d(0, 0),
         position = Vec2d(0, 100),
         size = expectedSize,
         color = darkColor.value,
         rankMark = Some("1").orUndefined,
-        fileMark = Some("a").orUndefined
+        fileMark = Some("a").orUndefined,
+        isHighlighted = false
       ),
       TileObj(
         id = "a",
+        gamePosition = Vec2d(0, 0),
         position = Vec2d(100, 100),
         size = expectedSize,
         color = lightColor.value,
         rankMark = None.orUndefined,
-        fileMark = Some("b").orUndefined
+        fileMark = Some("b").orUndefined,
+        isHighlighted = false
       )
     )
 
