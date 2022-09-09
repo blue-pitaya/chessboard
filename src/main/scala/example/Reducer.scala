@@ -7,6 +7,7 @@ import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.annotation._
 import example.game.PossibleMoves
+import example.game.GameLogic
 
 trait DrawingObj {
   def id: String
@@ -139,15 +140,12 @@ object Reducer {
         case x: PieceObj =>
           val newPosition = Renderer
             .toLogicPostion(pointerPosition, Settings.boardDimens)
-          val possibleMoves = PossibleMoves.getMoves(x.gamePosition, gameState)
-          if (possibleMoves.contains(newPosition)) {
-            val nextGameState = Mutator.updatePiece(gameState, x, newPosition)
-            val nextUiState = GlobalState.updateGameState(nextGameState)
-            Mutator.unhighlightTiles(nextUiState)
-          } else {
-            val nextUiState = GlobalState.updateGameState(gameState)
-            Mutator.unhighlightTiles(nextUiState)
-          }
+          val nextGameState = GameLogic
+            .makeMove(x.gamePosition, newPosition, gameState)
+            .getOrElse(gameState)
+          val nextUiState = GlobalState.updateGameState(nextGameState)
+          Mutator.unhighlightTiles(nextUiState)
+
         case _ =>
           println("error!")
           uiState

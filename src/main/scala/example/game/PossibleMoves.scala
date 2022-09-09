@@ -104,6 +104,27 @@ object PossibleMoves {
     state.pieces.get(pos).map(p => p.color != color).getOrElse(true)
   )
 
+  def getEnPassantMoves(
+      pos: Vec2d,
+      color: PieceColor,
+      state: GameState
+  ): Set[Vec2d] = state
+    .lastMove
+    .map { move =>
+      val lastMoveIsNearPawnDoubleUp = move.piece.kind == Pawn &&
+        Math.abs(move.from.y - move.to.y) == 2 &&
+        Math.abs(pos.x - move.to.x) == 1
+
+      lazy val attackStep = color match {
+        case Black => Vec2d(move.to.x - pos.x, -1)
+        case White => Vec2d(move.to.x - pos.x, 1)
+      }
+
+      if (lastMoveIsNearPawnDoubleUp) Seq(pos + attackStep) else Seq()
+    }
+    .getOrElse(Seq())
+    .toSet
+
   private def pawnMoves(
       pos: Vec2d,
       color: PieceColor,
@@ -130,21 +151,7 @@ object PossibleMoves {
       else Seq()
 
     // en passant
-    val enPassantMoves = state
-      .lastMove
-      .map { move =>
-        val lastMoveIsNearPawnDoubleUp = move.piece.kind == Pawn &&
-          Math.abs(move.from.y - move.to.y) == 2 &&
-          Math.abs(pos.x - move.to.x) == 1
-
-        lazy val attackStep = color match {
-          case Black => Vec2d(move.to.x - pos.x, -1)
-          case White => Vec2d(move.to.x - pos.x, 1)
-        }
-
-        if (lastMoveIsNearPawnDoubleUp) Seq(pos + attackStep) else Seq()
-      }
-      .getOrElse(Seq())
+    val enPassantMoves = getEnPassantMoves(pos, color, state)
 
     (attackMoves ++ regularMoves ++ doubleMoves ++ enPassantMoves).toSet
   }
