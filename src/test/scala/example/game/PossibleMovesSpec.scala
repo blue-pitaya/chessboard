@@ -181,6 +181,20 @@ class RendererSpec extends AnyFlatSpec with Matchers {
     PossibleMoves.getMoves(pos, state) shouldEqual expected
   }
 
+  "pawn" should
+    "not be able to do en passant if is on diffrent rank than pawn which moves previously" in {
+      val pos = Vec2d(1, 5)
+      val piece = Piece(Pawn, White)
+      val state = GameState(
+        size = Vec2d(8, 8),
+        pieces = Map(pos -> piece, Vec2d(2, 4) -> Piece(Pawn, Black)),
+        lastMove = Some(Move(Piece(Pawn, Black), Vec2d(2, 6), Vec2d(2, 4)))
+      )
+      val expected = Set(Vec2d(1, 6))
+
+      PossibleMoves.getMoves(pos, state) shouldEqual expected
+    }
+
   "pawn" should "not be able to go outside board" in {
     val pos = Vec2d(0, 7)
     val piece = Piece(Pawn, White)

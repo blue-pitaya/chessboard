@@ -115,12 +115,16 @@ object PossibleMoves {
         Math.abs(move.from.y - move.to.y) == 2 &&
         Math.abs(pos.x - move.to.x) == 1
 
+      val lastMovedPieceIsOnSameRank = move.to.y == pos.y
+
       lazy val attackStep = color match {
         case Black => Vec2d(move.to.x - pos.x, -1)
         case White => Vec2d(move.to.x - pos.x, 1)
       }
 
-      if (lastMoveIsNearPawnDoubleUp) Seq(pos + attackStep) else Seq()
+      if (lastMoveIsNearPawnDoubleUp && lastMovedPieceIsOnSameRank)
+        Seq(pos + attackStep)
+      else Seq()
     }
     .getOrElse(Seq())
     .toSet

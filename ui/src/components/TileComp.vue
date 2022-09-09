@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { Tile, Vec2d } from "@/util";
+import { Vec2d } from "@/util";
 import { computed, defineProps } from "vue";
 
 const props = defineProps<{
