@@ -17,7 +17,7 @@ export interface Tile {
   color: string;
   fileMark?: string;
   rankMark?: string;
-  isHighlighted: boolean;
+  isMarked: boolean;
 }
 
 //TODO: this is Piece proxy

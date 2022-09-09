@@ -89,13 +89,13 @@ object Mutator {
       state
         .tileObjs
         .map(t =>
-          if (positions.contains(t.gamePosition)) t.copy(isHighlighted = true)
+          if (positions.contains(t.gamePosition)) t.copy(isMarked = true)
           else t
         )
     )
 
   def unhighlightTiles(state: UiState): UiState = state
-    .copy(tileObjs = state.tileObjs.map(_.copy(isHighlighted = false)))
+    .copy(tileObjs = state.tileObjs.map(_.copy(isMarked = false)))
 }
 
 object Reducer {

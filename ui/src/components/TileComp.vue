@@ -8,15 +8,10 @@ const props = defineProps<{
   color: string;
   fileMark?: string;
   rankMark?: string;
-  isHighlighted: boolean;
 }>();
 
 const transformString = computed(
   () => `translate(${props.position.x}, ${props.position.y})`
-);
-
-const fillColor = computed(() =>
-  props.isHighlighted ? "purple" : props.color
 );
 </script>
 
@@ -25,7 +20,7 @@ const fillColor = computed(() =>
     :transform="transformString"
     :width="size.x"
     :height="size.y"
-    :fill="fillColor"
+    :fill="color"
   />
   <foreignObject :transform="transformString" :width="size.x" :height="size.y">
     <div class="markContainer">

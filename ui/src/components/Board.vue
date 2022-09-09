@@ -9,6 +9,7 @@ import {
   onEndDragging,
   onStartDragging,
 } from "@/scalajs/main";
+import MarkComp from "./MarkComp.vue";
 
 const { state, updateState } = useState();
 
@@ -39,6 +40,8 @@ const onPieceDragStart = (payload: { piece: Piece; pointerPos: Vec2d }) => {
     onStartDragging(payload.piece, getPointerBoardPosition(payload.pointerPos))
   );
 };
+
+const markedTiles = computed(() => tiles.value.filter((t) => t.isMarked));
 </script>
 
 <template>
@@ -51,7 +54,12 @@ const onPieceDragStart = (payload: { piece: Piece; pointerPos: Vec2d }) => {
       :color="t.color"
       :file-mark="t.fileMark"
       :rank-mark="t.rankMark"
-      :is-highlighted="t.isHighlighted"
+    />
+    <MarkComp
+      v-for="t in markedTiles"
+      :key="t.id"
+      :position="t.position"
+      :size="t.size"
     />
     <PieceComp
       v-for="p in pieces"
