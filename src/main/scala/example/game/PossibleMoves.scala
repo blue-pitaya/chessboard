@@ -3,6 +3,7 @@ package example.game
 import example.GameState
 import example.models.Vec2d._
 import example.models._
+import example.Move
 
 object PossibleMoves {
   private def isInsideBoard(boardSize: Vec2d)(pos: Vec2d): Boolean =
@@ -36,11 +37,25 @@ object PossibleMoves {
     moveStep(pos, step, stop, stopBefore) - pos
   }
 
+  private def jumpAttack(
+      pos: Vec2d,
+      step: Vec2d,
+      state: GameState
+  ): Set[Vec2d] = {
+    val move = pos + step
+    if (isInsideBoard(state.size)(move)) Set(move) else Set()
+  }
+
   private def knightAttacks(pos: Vec2d, state: GameState): Set[Vec2d] = {
     val steps =
       mirroredVecs(Seq(Vec2d(2, 1), Vec2d(1, 2), Vec2d(-2, 1), Vec2d(-1, 2)))
-    val moves = steps.map(_ + pos)
-    moves.filter(isInsideBoard(state.size)).toSet
+    steps.flatMap(s => jumpAttack(pos, s, state)).toSet
+  }
+
+  private def kingAttacks(pos: Vec2d, state: GameState): Set[Vec2d] = {
+    val steps =
+      mirroredVecs(Seq(Vec2d(0, 1), Vec2d(1, 1), Vec2d(1, 0), Vec2d(1, -1)))
+    steps.flatMap(s => jumpAttack(pos, s, state)).toSet
   }
 
   private def bishopAttacks(pos: Vec2d, state: GameState): Set[Vec2d] = {
@@ -65,13 +80,6 @@ object PossibleMoves {
       case Black => Seq(Vec2d(-1, -1), Vec2d(1, -1))
       case White => Seq(Vec2d(-1, 1), Vec2d(1, 1))
     }
-    val moves = steps.map(_ + pos)
-    moves.filter(isInsideBoard(state.size)).toSet
-  }
-
-  private def kingAttacks(pos: Vec2d, state: GameState): Set[Vec2d] = {
-    val steps =
-      mirroredVecs(Seq(Vec2d(0, 1), Vec2d(1, 1), Vec2d(1, 0), Vec2d(1, -1)))
     val moves = steps.map(_ + pos)
     moves.filter(isInsideBoard(state.size)).toSet
   }
@@ -160,25 +168,29 @@ object PossibleMoves {
     (attackMoves ++ regularMoves ++ doubleMoves ++ enPassantMoves).toSet
   }
 
-  // TODO: king is under check
-  private def kingMoves(
-      pos: Vec2d,
-      color: PieceColor,
-      state: GameState
-  ): Set[Vec2d] = {
-    val unrestrictedMoves =
-      movesFromAttacks(kingAttacks(pos, state), color, state)
-    val attacks = getAllAttacks(color.opposite, state)
-    unrestrictedMoves -- attacks
-  }
+  private def isKingUnderCheck(color: PieceColor, state: GameState): Boolean =
+    state
+      .pieces
+      .find { case (_, piece) => piece.kind == King && piece.color == color }
+      .map { case (pos, king) =>
+        val attacks = getAllAttacks(color.opposite, state)
+        attacks.contains(pos)
+      }
+      .getOrElse(false) // king can't be checked if there is no king ¯\_(ツ)_/¯
 
-  def getMoves(pos: Vec2d, piece: Piece, state: GameState): Set[Vec2d] =
-    piece.kind match {
-      case King => kingMoves(pos, piece.color, state)
-      case _: MajorPieceType =>
-        movesFromAttacks(getAttacks(pos, piece, state), piece.color, state)
+  def getMoves(pos: Vec2d, piece: Piece, state: GameState): Set[Vec2d] = {
+    val moves = piece.kind match {
       case Pawn => pawnMoves(pos, piece.color, state)
+      case _ =>
+        movesFromAttacks(getAttacks(pos, piece, state), piece.color, state)
     }
+
+    def toMove(to: Vec2d) = Move(piece, pos, to)
+
+    moves.filter(to =>
+      !isKingUnderCheck(piece.color, GameLogic.forceMove(toMove(to), state))
+    )
+  }
 
   def getMoves(pos: Vec2d, state: GameState): Set[Vec2d] = state
     .pieces

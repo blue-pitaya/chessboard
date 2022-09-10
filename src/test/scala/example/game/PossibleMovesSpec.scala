@@ -254,6 +254,87 @@ class RendererSpec extends AnyFlatSpec with Matchers {
       PossibleMoves.getMoves(pos, state) shouldEqual expected
     }
 
+  "king" should "move from check" in {
+    val pos = Vec2d(1, 1)
+    val piece = Piece(King, White)
+    val state = GameState(
+      size = Vec2d(3, 3),
+      pieces = Map(pos -> piece, Vec2d(0, 1) -> Piece(Queen, Black))
+    )
+    val expected = Set(Vec2d(2, 0), Vec2d(2, 2), Vec2d(0, 1))
+
+    PossibleMoves.getMoves(pos, state) shouldEqual expected
+  }
+
+  "piece" should
+    "not be able to move if king is under check and move dont prvent check" in {
+      val pos = Vec2d(0, 0)
+      val piece = Piece(Rook, White)
+      val state = GameState(
+        size = Vec2d(3, 3),
+        pieces = Map(
+          pos -> piece,
+          Vec2d(2, 0) -> Piece(King, White),
+          Vec2d(1, 1) -> Piece(Pawn, Black)
+        )
+      )
+      val expected = Set()
+
+      PossibleMoves.getMoves(pos, state) shouldEqual expected
+    }
+
+  "piece" should
+    "be able to move when king is under check if it prevents check" in {
+      val pos = Vec2d(0, 1)
+      val piece = Piece(Rook, White)
+      val state = GameState(
+        size = Vec2d(3, 3),
+        pieces = Map(
+          pos -> piece,
+          Vec2d(2, 0) -> Piece(King, White),
+          Vec2d(2, 2) -> Piece(Queen, Black)
+        )
+      )
+      val expected = Set(Vec2d(2, 1))
+
+      PossibleMoves.getMoves(pos, state) shouldEqual expected
+    }
+
+  "pawn" should "be able to stop check by doing en passant" in {
+    val pos = Vec2d(1, 3)
+    val piece = Piece(Pawn, Black)
+    val state = GameState(
+      size = Vec2d(8, 8),
+      pieces = Map(
+        pos -> piece,
+        Vec2d(0, 3) -> Piece(Pawn, White),
+        Vec2d(1, 4) -> Piece(King, Black)
+      ),
+      lastMove = Some(Move(Piece(Pawn, White), Vec2d(0, 1), Vec2d(0, 3)))
+    )
+    val expected = Set(Vec2d(0, 2))
+
+    PossibleMoves.getMoves(pos, state) shouldEqual expected
+
+  }
+
+  "piece" should
+    "not be able to move is performing move puts king under check" in {
+      val pos = Vec2d(2, 1)
+      val piece = Piece(Bishop, White)
+      val state = GameState(
+        size = Vec2d(3, 3),
+        pieces = Map(
+          pos -> piece,
+          Vec2d(2, 0) -> Piece(King, White),
+          Vec2d(2, 2) -> Piece(Queen, Black)
+        )
+      )
+      val expected = Set()
+
+      PossibleMoves.getMoves(pos, state) shouldEqual expected
+    }
+
   "king" should
     "not be able to walk to position which is under attack by pawn" in {
       val pos = Vec2d(1, 1)

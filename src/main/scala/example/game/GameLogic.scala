@@ -17,23 +17,26 @@ object GameLogic {
     if (isEnPassant) state.lastMove.map(_.to) else None
   }
 
-  def makeMove(from: Vec2d, to: Vec2d, state: GameState): Option[GameState] = {
-    def enPassantCheck(move: Move)(pieces: Map[Vec2d, Piece]) =
+  // TODO: move and state both has info about piece
+  // makes move even if illegal
+  def forceMove(move: Move, state: GameState): GameState = {
+    def enPassantCheck(pieces: Map[Vec2d, Piece]) =
       enPassanedPiecePos(move, state).map(pieces.removed(_)).getOrElse(pieces)
 
-    def movePiece(piece: Piece)(pieces: Map[Vec2d, Piece]) = pieces
-      .removed(from)
-      .updated(to, piece)
+    def movePiece(pieces: Map[Vec2d, Piece]) = pieces
+      .removed(move.from)
+      .updated(move.to, move.piece)
 
-    def getNextPieces(move: Move) =
-      (movePiece(move.piece) _ andThen enPassantCheck(move))(state.pieces)
+    def getNextPieces = (movePiece _ andThen enPassantCheck)(state.pieces)
 
+    state.copy(pieces = getNextPieces, lastMove = Some(move))
+  }
+
+  def makeMove(from: Vec2d, to: Vec2d, state: GameState): Option[GameState] =
     for {
       piece <- state.pieces.get(from) // piece must exist
       possibleMoves = PossibleMoves.getMoves(from, piece, state)
       _ <- Option.when(possibleMoves.contains(to))()
       move = Move(piece, from, to)
-      nextPieces = getNextPieces(move)
-    } yield (state.copy(pieces = nextPieces, lastMove = Some(move)))
-  }
+    } yield (forceMove(move, state))
 }
