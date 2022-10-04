@@ -1,7 +1,7 @@
 package example
 
 import example.models.HexColor
-import example.models.Vec2d
+import xyz.bluepitaya.common.Vec2d
 import example.BoardDimens
 
 object Settings {

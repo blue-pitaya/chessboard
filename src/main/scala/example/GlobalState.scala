@@ -1,7 +1,7 @@
 package example
 
-import example.models.Vec2d
 import example.models.Piece
+import xyz.bluepitaya.common.Vec2d
 
 case class Move(piece: Piece, from: Vec2d, to: Vec2d)
 

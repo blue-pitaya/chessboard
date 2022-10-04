@@ -1,6 +1,7 @@
 package example
 
 import example.models._
+import xyz.bluepitaya.common.Vec2d
 
 object Game {
   def initPieces: Map[Vec2d, Piece] = {

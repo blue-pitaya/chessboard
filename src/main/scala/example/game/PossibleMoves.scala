@@ -1,9 +1,9 @@
 package example.game
 
 import example.GameState
-import example.models.Vec2d._
-import example.models._
 import example.Move
+import example.models._
+import xyz.bluepitaya.common.Vec2d
 
 object PossibleMoves {
   private def isInsideBoard(boardSize: Vec2d)(pos: Vec2d): Boolean =

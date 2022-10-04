@@ -1,10 +1,9 @@
 package example
 
-import example.models.Vec2d
-
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.annotation._
+import xyz.bluepitaya.common.Vec2d
 
 @JSExportAll
 case class JsRenderedState(tiles: js.Array[TileObj], pieces: js.Array[PieceObj])

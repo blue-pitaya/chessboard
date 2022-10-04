@@ -1,7 +1,6 @@
 package example
 
-import example.models.Vec2d
-import example.models.Vec2d._
+import xyz.bluepitaya.common.Vec2d
 import example.models.Piece
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._

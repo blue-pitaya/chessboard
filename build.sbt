@@ -13,6 +13,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "chessboard",
     libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.13" % Test,
+    libraryDependencies += "xyz.bluepitaya" %%% "common-utils" % "1.0",
     scalaJSLinkerConfig ~= { 
       _.withModuleKind(ModuleKind.ESModule)
       .withOutputPatterns(OutputPatterns.fromJSFile("%s.mjs")) 
