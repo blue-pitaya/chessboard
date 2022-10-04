@@ -9,6 +9,7 @@ data/
 *.bloop
 *.metals
 .bsp
+**/metals.sbt
 
 ui/src/scalajs
 
