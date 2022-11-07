@@ -10,13 +10,13 @@ import example.models.Pawn
 import example.models.Piece
 import example.models.Queen
 import example.models.Rook
-import example.models.Vec2d
 import example.models.White
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import scala.scalajs.js.JSConverters._
 import example.Move
+import xyz.bluepitaya.common.Vec2d
 
 class RendererSpec extends AnyFlatSpec with Matchers {
   val boardSize: Vec2d = Vec2d(8, 8)

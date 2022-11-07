@@ -7,6 +7,7 @@ import org.scalatest.matchers.should.Matchers
 
 import scala.scalajs.js.JSConverters._
 import example.Move
+import xyz.bluepitaya.common.Vec2d
 
 class GameLogicSpec extends AnyFlatSpec with Matchers {
   "pawn en passant move" should "kill pawn that made 2 tile move" in {

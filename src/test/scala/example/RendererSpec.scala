@@ -2,9 +2,9 @@ package example
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import example.models.Vec2d
 import example.models.HexColor
 import scala.scalajs.js.JSConverters._
+import xyz.bluepitaya.common.Vec2d
 
 class RendererSpec extends AnyFlatSpec with Matchers {
   val darkColor = HexColor("#000000")
