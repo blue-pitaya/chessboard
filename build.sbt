@@ -15,7 +15,7 @@ lazy val root = (project in file("."))
     libraryDependencies += "org.typelevel" %%% "cats-effect" % "3.3.14",
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.ESModule)
-      .withOutputPatterns(OutputPatterns.fromJSFile("%s.js"))
+      .withOutputPatterns(OutputPatterns.fromJSFile("%s.mjs"))
       .withESFeatures(_.withESVersion(ESVersion.ES2021))
     },
     Compile / fastLinkJS / scalaJSLinkerOutputDirectory := baseDirectory.value / "ui/src/scalajs/",

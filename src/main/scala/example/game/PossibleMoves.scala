@@ -2,122 +2,125 @@ package example.game
 
 import example.GameState
 import example.Move
+import example.Utils.takeWhileInclusive
 import example.models._
 import xyz.bluepitaya.common.Vec2d
 
 object PossibleMoves {
-  private def isInsideBoard(boardSize: Vec2d)(pos: Vec2d): Boolean =
-    (pos.x >= 0 && pos.y >= 0 && pos.x < boardSize.x && pos.y < boardSize.y)
-
-  private def mirroredVecs(vecs: Seq[Vec2d]): Seq[Vec2d] = vecs ++
-    vecs.map(_ * -1)
-
-  private def moveStep(
-      pos: Vec2d,
-      step: Vec2d,
-      stop: Vec2d => Boolean,
-      stopBefore: Vec2d => Boolean,
-      acc: Set[Vec2d] = Set()
-  ): Set[Vec2d] = {
-    lazy val currentAcc = acc + pos
-    lazy val nextPos = pos + step
-
-    if (stop(pos)) currentAcc
-    else if (stopBefore(nextPos)) currentAcc
-    else moveStep(nextPos, step, stop, stopBefore, currentAcc)
-  }
 
   private def lineAttacks(
       pos: Vec2d,
-      step: Vec2d,
-      state: GameState
-  ): Set[Vec2d] = {
-    val stop = (v: Vec2d) => state.pieces.get(v).isDefined && v != pos
-    val stopBefore = (v: Vec2d) => !isInsideBoard(state.size)(v)
-    moveStep(pos, step, stop, stopBefore) - pos
+      nextPos: Vec2d => Vec2d,
+      isPieceOn: Vec2d => Boolean,
+      isInsideBoard: Vec2d => Boolean
+  ) = {
+    val start = nextPos(pos)
+    val stop = (v: Vec2d) => isPieceOn(v)
+    val stopBefore = (v: Vec2d) => !isInsideBoard(v)
+
+    takeWhileInclusive(start, nextPos, stop, stopBefore).toSet
   }
 
-  private def jumpAttack(
+  private def jumpAttacks(
       pos: Vec2d,
-      step: Vec2d,
-      state: GameState
+      nextPos: Vec2d => Vec2d,
+      isInsideBoard: Vec2d => Boolean
   ): Set[Vec2d] = {
-    val move = pos + step
-    if (isInsideBoard(state.size)(move)) Set(move) else Set()
+    val move = nextPos(pos)
+
+    if (isInsideBoard(move)) Set(move)
+    else Set()
   }
 
-  private def knightAttacks(pos: Vec2d, state: GameState): Set[Vec2d] = {
-    val steps =
-      mirroredVecs(Seq(Vec2d(2, 1), Vec2d(1, 2), Vec2d(-2, 1), Vec2d(-1, 2)))
-    steps.flatMap(s => jumpAttack(pos, s, state)).toSet
-  }
-
-  private def kingAttacks(pos: Vec2d, state: GameState): Set[Vec2d] = {
-    val steps =
-      mirroredVecs(Seq(Vec2d(0, 1), Vec2d(1, 1), Vec2d(1, 0), Vec2d(1, -1)))
-    steps.flatMap(s => jumpAttack(pos, s, state)).toSet
-  }
-
-  private def bishopAttacks(pos: Vec2d, state: GameState): Set[Vec2d] = {
-    val steps = mirroredVecs(Seq(Vec2d(1, 1), Vec2d(-1, 1)))
-    steps.flatMap(s => lineAttacks(pos, s, state)).toSet
-  }
-
-  private def rookAttacks(pos: Vec2d, state: GameState): Set[Vec2d] = {
-    val steps = mirroredVecs(Seq(Vec2d(0, 1), Vec2d(1, 0)))
-    steps.flatMap(s => lineAttacks(pos, s, state)).toSet
-  }
-
-  private def queenAttacks(pos: Vec2d, state: GameState): Set[Vec2d] =
-    rookAttacks(pos, state) ++ bishopAttacks(pos, state)
-
-  private def pawnAttacks(
+  private def lineCountedNonaggressiveMove(
       pos: Vec2d,
-      color: PieceColor,
-      state: GameState
-  ): Set[Vec2d] = {
-    val steps = color match {
-      case Black => Seq(Vec2d(-1, -1), Vec2d(1, -1))
-      case White => Seq(Vec2d(-1, 1), Vec2d(1, 1))
-    }
-    val moves = steps.map(_ + pos)
-    moves.filter(isInsideBoard(state.size)).toSet
+      maxSteps: Int,
+      nextPos: Vec2d => Vec2d,
+      isInsideBoard: Vec2d => Boolean,
+      isPieceOn: Vec2d => Boolean
+  ) = {
+    case class PosStep(v: Vec2d, n: Int)
+    val stop = (ps: PosStep) => ps.n == maxSteps
+    val stopBefore = (ps: PosStep) => !isInsideBoard(ps.v) || isPieceOn(ps.v)
+    val start = PosStep(nextPos(pos), 1)
+    val next = (ps: PosStep) => PosStep(nextPos(ps.v), ps.n + 1)
+
+    takeWhileInclusive(start, next, stop, stopBefore).map(_.v).toSet
   }
 
-  private def getAttacks(
+  private def getPieceAttacks(
       pos: Vec2d,
       piece: Piece,
-      state: GameState
-  ): Set[Vec2d] = piece.kind match {
-    case King   => kingAttacks(pos, state)
-    case Bishop => bishopAttacks(pos, state)
-    case Knight => knightAttacks(pos, state)
-    case Queen  => queenAttacks(pos, state)
-    case Rook   => rookAttacks(pos, state)
-    case Pawn   => pawnAttacks(pos, piece.color, state)
+      jumpAttackSteps: Vec2d => Set[Vec2d],
+      lineAttackSteps: Vec2d => Set[Vec2d]
+  ) = {
+    def mirroredVecs(vecs: Set[Vec2d]) = vecs ++ vecs.map(_ * -1)
+    def attacks(steps: Set[Vec2d], extendSteps: Vec2d => Set[Vec2d]) = steps
+      .flatMap(extendSteps)
+
+    val kingSteps =
+      mirroredVecs(Set(Vec2d(0, 1), Vec2d(1, 1), Vec2d(1, 0), Vec2d(1, -1)))
+    val bishopSteps = mirroredVecs(Set(Vec2d(1, 1), Vec2d(-1, 1)))
+    val rookSteps = mirroredVecs(Set(Vec2d(0, 1), Vec2d(1, 0)))
+    val queenSteps = rookSteps ++ bishopSteps
+    val knightSteps =
+      mirroredVecs(Set(Vec2d(2, 1), Vec2d(1, 2), Vec2d(-2, 1), Vec2d(-1, 2)))
+    val whitePawnSteps = Set(Vec2d(-1, 1), Vec2d(1, 1))
+    val blackPawnSteps = Set(Vec2d(-1, -1), Vec2d(1, -1))
+
+    piece match {
+      case Piece(King, _)     => attacks(kingSteps, jumpAttackSteps)
+      case Piece(Bishop, _)   => attacks(bishopSteps, lineAttackSteps)
+      case Piece(Knight, _)   => attacks(knightSteps, jumpAttackSteps)
+      case Piece(Queen, _)    => attacks(queenSteps, lineAttackSteps)
+      case Piece(Rook, _)     => attacks(rookSteps, lineAttackSteps)
+      case Piece(Pawn, White) => attacks(whitePawnSteps, jumpAttackSteps)
+      case Piece(Pawn, Black) => attacks(blackPawnSteps, jumpAttackSteps)
+    }
   }
 
-  private def getAllAttacks(color: PieceColor, state: GameState): Set[Vec2d] =
-    state
-      .pieces
-      .filter { case (_, piece) => piece.color == color }
-      .flatMap { case (pos, piece) => getAttacks(pos, piece, state) }
-      .toSet
+  private def getAllAttacks(
+      pieces: Map[Vec2d, Piece],
+      color: PieceColor,
+      attacks: (Vec2d, Piece) => Set[Vec2d]
+  ): Set[Vec2d] = pieces
+    .filter { case (_, piece) =>
+      piece.color == color
+    }
+    .flatMap { case (pos, piece) =>
+      attacks(pos, piece)
+    }
+    .toSet
+
+  private def isKingUnderCheck(
+      pieces: Map[Vec2d, Piece],
+      kingColor: PieceColor,
+      enemyAttacks: Set[Vec2d]
+  ): Boolean = pieces
+    .find { case (_, piece) =>
+      piece.kind == King && piece.color == kingColor
+    }
+    .map { case (pos, _) =>
+      enemyAttacks.contains(pos)
+    }
+    .getOrElse(false) // king can't be checked if there is no king ¯\_(ツ)_/¯
 
   private def movesFromAttacks(
       attacks: Set[Vec2d],
-      color: PieceColor,
-      state: GameState
-  ): Set[Vec2d] = attacks.filter(pos =>
-    state.pieces.get(pos).map(p => p.color != color).getOrElse(true)
-  )
+      isSameColor: Vec2d => Boolean
+  ) = attacks.filter(isSameColor)
+
+  private def maxPawnSteps(pos: Vec2d, color: PieceColor) = color match {
+    case Black if pos.y == 6 => 2
+    case White if pos.y == 1 => 2
+    case _                   => 1
+  }
 
   def getEnPassantMoves(
       pos: Vec2d,
       color: PieceColor,
-      state: GameState
-  ): Set[Vec2d] = state
-    .lastMove
+      lastMove: Option[Move]
+  ): Set[Vec2d] = lastMove
     .map { move =>
       val lastMoveIsNearPawnDoubleUp = move.piece.kind == Pawn &&
         Math.abs(move.from.y - move.to.y) == 2 &&
@@ -137,64 +140,80 @@ object PossibleMoves {
     .getOrElse(Seq())
     .toSet
 
-  private def pawnMoves(
+  private val nextPos = (step: Vec2d) => (v: Vec2d) => v + step
+
+  private val isInsideBoard = (size: Vec2d) =>
+    (v: Vec2d) => (v.x >= 0 && v.y >= 0 && v.x < size.x && v.y < size.y)
+
+  private val isPieceOn =
+    (pieces: Map[Vec2d, Piece]) => (v: Vec2d) => pieces.isDefinedAt(v)
+
+  private def getAttacks(pos: Vec2d, piece: Piece, state: GameState) = {
+    val _isInsideBoard = isInsideBoard(state.size)
+    val _isPieceOn = isPieceOn(state.pieces)
+    val jumpAttackSteps =
+      (step: Vec2d) => jumpAttacks(pos, nextPos(step), _isInsideBoard)
+    val lineAttackSteps = (step: Vec2d) =>
+      lineAttacks(pos, nextPos(step), _isPieceOn, _isInsideBoard)
+
+    getPieceAttacks(pos, piece, jumpAttackSteps, lineAttackSteps)
+  }
+
+  private def _getMoves(
       pos: Vec2d,
-      color: PieceColor,
+      piece: Piece,
       state: GameState
   ): Set[Vec2d] = {
-    // attack
-    val attackMoves = pawnAttacks(pos, color, state).filter(p =>
-      state.pieces.get(p).map(p => p.color != color).getOrElse(false)
-    )
+    val currentPieceAttacks = getAttacks(pos, piece, state)
 
-    // 1 up
-    val step = if (color == White) Vec2d(0, 1) else Vec2d(0, -1)
-    def canMove(v: Vec2d) = isInsideBoard(state.size)(v) &&
-      !state.pieces.get(v).isDefined
-    val moveOneTile = pos + step
-    val regularMoves = if (canMove(moveOneTile)) Seq(moveOneTile) else Seq()
+    val color = piece.color
+    val isOppositeColor =
+      (v: Vec2d) => state.pieces.get(v).map(_.color != color)
 
-    // 2 up
-    val isOnStartingFile = if (color == White) pos.y == 1 else pos.y == 6
-    val moveTwoTiles = pos + (step * 2)
-    val doubleMoves =
-      if (isOnStartingFile && canMove(moveOneTile) && canMove(moveTwoTiles))
-        Seq(moveTwoTiles)
-      else Seq()
-
-    // en passant
-    val enPassantMoves = getEnPassantMoves(pos, color, state)
-
-    (attackMoves ++ regularMoves ++ doubleMoves ++ enPassantMoves).toSet
-  }
-
-  private def isKingUnderCheck(color: PieceColor, state: GameState): Boolean =
-    state
-      .pieces
-      .find { case (_, piece) => piece.kind == King && piece.color == color }
-      .map { case (pos, king) =>
-        val attacks = getAllAttacks(color.opposite, state)
-        attacks.contains(pos)
-      }
-      .getOrElse(false) // king can't be checked if there is no king ¯\_(ツ)_/¯
-
-  def getMoves(pos: Vec2d, piece: Piece, state: GameState): Set[Vec2d] = {
     val moves = piece.kind match {
-      case Pawn => pawnMoves(pos, piece.color, state)
+      case Pawn =>
+        val isOppositeColorOrNonEmpty =
+          (v: Vec2d) => isOppositeColor(v).getOrElse(false)
+        val attackMoves = currentPieceAttacks.filter(isOppositeColorOrNonEmpty)
+        val pawnStep = (color: PieceColor) =>
+          color match {
+            case Black => Vec2d(0, -1)
+            case White => Vec2d(0, 1)
+          }
+
+        val normalMoves = lineCountedNonaggressiveMove(
+          pos,
+          maxPawnSteps(pos, color),
+          nextPos(pawnStep(color)),
+          isInsideBoard(state.size),
+          isPieceOn(state.pieces)
+        )
+        val enPassantMoves = getEnPassantMoves(pos, color, state.lastMove)
+
+        attackMoves ++ normalMoves ++ enPassantMoves
+
       case _ =>
-        movesFromAttacks(getAttacks(pos, piece, state), piece.color, state)
+        val isOppositeColorOrEmpty =
+          (v: Vec2d) => isOppositeColor(v).getOrElse(true)
+        currentPieceAttacks.filter(isOppositeColorOrEmpty)
     }
 
-    def toMove(to: Vec2d) = Move(piece, pos, to)
+    val simulateMove =
+      (to: Vec2d) => GameLogic.forceMove(Move(piece, pos, to), state)
 
-    moves.filter(to =>
-      !isKingUnderCheck(piece.color, GameLogic.forceMove(toMove(to), state))
-    )
+    moves.filter { to =>
+      val simulatedState = simulateMove(to)
+      val attacks = (v: Vec2d, p: Piece) => getAttacks(v, p, simulatedState)
+      val enemyAttacks =
+        getAllAttacks(simulatedState.pieces, color.opposite, attacks)
+
+      !isKingUnderCheck(simulatedState.pieces, color, enemyAttacks)
+    }
   }
 
-  def getMoves(pos: Vec2d, state: GameState): Set[Vec2d] = state
+  def getMoves(pos: Vec2d, state: GameState) = state
     .pieces
     .get(pos)
-    .map(getMoves(pos, _, state))
+    .map(_getMoves(pos, _, state))
     .getOrElse(Set())
 }

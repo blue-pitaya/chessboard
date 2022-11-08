@@ -1,6 +1,6 @@
 import { ref } from "vue";
 import { Piece, Tile } from "../util";
-import { getState } from "../scalajs/main";
+import { getState } from "../scalajs/main.mjs";
 
 export interface State {
   tiles: Array<Tile>;

@@ -5,8 +5,8 @@ import example.models.Piece
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.annotation._
-import example.game.PossibleMoves
 import example.game.GameLogic
+import example.game.PossibleMoves
 
 trait DrawingObj {
   def id: String
@@ -36,18 +36,30 @@ object Mutator {
   private def putDrawingObj(state: UiState, obj: DrawingObj): UiState =
     obj match {
       case x: PieceObj => state.copy(pieceObjs =
-          state.pieceObjs.map { p => if (p.id == x.id) x else p }
+          state
+            .pieceObjs
+            .map { p =>
+              if (p.id == x.id) x
+              else p
+            }
         )
       case x: TileObj => state.copy(tileObjs =
-          state.tileObjs.map { t => if (t.id == x.id) x else t }
+          state
+            .tileObjs
+            .map { t =>
+              if (t.id == x.id) x
+              else t
+            }
         )
     }
 
   def updateDrawingObj(state: UiState, updatedObj: DrawingObj): UiState = {
-    (for {
-      drawingObj <- getDrawingObj(state, updatedObj.id)
-      updatedState = putDrawingObj(state, updatedObj)
-    } yield (updatedState)).getOrElse(state)
+    (
+      for {
+        drawingObj <- getDrawingObj(state, updatedObj.id)
+        updatedState = putDrawingObj(state, updatedObj)
+      } yield (updatedState)
+    ).getOrElse(state)
   }
 
   // TODO: move piece
@@ -57,13 +69,15 @@ object Mutator {
       newPosition: Vec2d
   ): GameState = {
     val oldPosition = pieceObj.gamePosition
-    (for {
-      piece <- gameState.pieces.get(oldPosition)
-      nextPieces = gameState
-        .pieces
-        .removed(oldPosition)
-        .updated(newPosition, piece)
-    } yield (gameState.copy(pieces = nextPieces))).getOrElse(gameState)
+    (
+      for {
+        piece <- gameState.pieces.get(oldPosition)
+        nextPieces = gameState
+          .pieces
+          .removed(oldPosition)
+          .updated(newPosition, piece)
+      } yield (gameState.copy(pieces = nextPieces))
+    ).getOrElse(gameState)
   }
 
   private def moveToBackList[T <: DrawingObj](
@@ -89,7 +103,8 @@ object Mutator {
       state
         .tileObjs
         .map(t =>
-          if (positions.contains(t.gamePosition)) t.copy(isMarked = true) else t
+          if (positions.contains(t.gamePosition)) t.copy(isMarked = true)
+          else t
         )
     )
 

@@ -13,9 +13,10 @@ object GameLogic {
   ): Option[Vec2d] = {
     val isEnPassant = move.piece.kind == Pawn &&
       PossibleMoves
-        .getEnPassantMoves(move.from, move.piece.color, state)
+        .getEnPassantMoves(move.from, move.piece.color, state.lastMove)
         .contains(move.to)
-    if (isEnPassant) state.lastMove.map(_.to) else None
+    if (isEnPassant) state.lastMove.map(_.to)
+    else None
   }
 
   // TODO: move and state both has info about piece
@@ -36,7 +37,7 @@ object GameLogic {
   def makeMove(from: Vec2d, to: Vec2d, state: GameState): Option[GameState] =
     for {
       piece <- state.pieces.get(from) // piece must exist
-      possibleMoves = PossibleMoves.getMoves(from, piece, state)
+      possibleMoves = PossibleMoves.getMoves(from, state)
       _ <- Option.when(possibleMoves.contains(to))()
       move = Move(piece, from, to)
     } yield (forceMove(move, state))
