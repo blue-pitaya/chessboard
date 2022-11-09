@@ -3,6 +3,11 @@ import Board from "@/components/Board.vue";
 </script>
 
 <template>
+  <p>
+    Simple chessborad, with implementes chess rules (without turn restrictions).
+    Todo: promoting pawn, rewriting code to Cats Effect, some fancy featureas
+    like playing actual game xd.
+  </p>
   <div class="centerElement">
     <Board />
   </div>
