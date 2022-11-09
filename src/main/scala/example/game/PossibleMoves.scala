@@ -169,6 +169,9 @@ object PossibleMoves {
     val color = piece.color
     val isOppositeColor =
       (v: Vec2d) => state.pieces.get(v).map(_.color != color)
+    val isOppositeColorOrEmpty =
+      (v: Vec2d) => isOppositeColor(v).getOrElse(true)
+    val standardMoves = currentPieceAttacks.filter(isOppositeColorOrEmpty)
 
     val moves = piece.kind match {
       case Pawn =>
@@ -192,10 +195,28 @@ object PossibleMoves {
 
         attackMoves ++ normalMoves ++ enPassantMoves
 
-      case _ =>
-        val isOppositeColorOrEmpty =
-          (v: Vec2d) => isOppositeColor(v).getOrElse(true)
-        currentPieceAttacks.filter(isOppositeColorOrEmpty)
+      case King =>
+        val rooks = state
+          .pieces
+          .filter { case (pos, piece) =>
+            piece.kind == Rook
+          }
+        val attacks = (v: Vec2d, p: Piece) => getAttacks(v, p, state)
+        val allAttacks = getAllAttacks(state.pieces, color.opposite, attacks)
+        val isAttackOn = (pos: Vec2d) => allAttacks.contains(pos)
+        val castleMove = (kingPos: Vec2d, rookPos: Vec2d) =>
+          Castling.getCastleKingMove(
+            kingPos,
+            rookPos,
+            state.hasPieceMoved,
+            isPieceOn(state.pieces),
+            isAttackOn
+          )
+        val castlingMoves = Castling.getMoves(color, pos, rooks, castleMove)
+
+        standardMoves ++ castlingMoves
+
+      case _ => standardMoves
     }
 
     val simulateMove =

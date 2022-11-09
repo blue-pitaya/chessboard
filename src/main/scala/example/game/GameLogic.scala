@@ -29,9 +29,9 @@ object GameLogic {
       .removed(move.from)
       .updated(move.to, move.piece)
 
-    def getNextPieces = (movePiece _ andThen enPassantCheck)(state.pieces)
+    def nextPieces = (movePiece _ andThen enPassantCheck)(state.pieces)
 
-    state.copy(pieces = getNextPieces, lastMove = Some(move))
+    state.updatePieces(nextPieces).addMoveToHistory(move)
   }
 
   def makeMove(from: Vec2d, to: Vec2d, state: GameState): Option[GameState] =

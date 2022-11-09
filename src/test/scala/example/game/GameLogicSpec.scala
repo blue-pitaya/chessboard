@@ -18,14 +18,11 @@ class GameLogicSpec extends AnyFlatSpec with Matchers {
     val size = Vec2d(8, 8)
     val state = GameState(
       size = Vec2d(8, 8),
-      pieces = Map(from -> whitePawn, Vec2d(3, 4) -> blackPawn),
-      lastMove = Some(Move(blackPawn, Vec2d(3, 6), Vec2d(3, 4)))
-    )
-    val expected = GameState(
-      size = size,
-      pieces = Map(to -> whitePawn),
-      lastMove = Some(Move(whitePawn, from, to))
-    )
+      pieces = Map(from -> whitePawn, Vec2d(3, 4) -> blackPawn)
+    ).addMoveToHistory(Move(blackPawn, Vec2d(3, 6), Vec2d(3, 4)))
+    val expected = GameState(size = size, pieces = Map(to -> whitePawn))
+      .addMoveToHistory(Move(blackPawn, Vec2d(3, 6), Vec2d(3, 4)))
+      .addMoveToHistory(Move(whitePawn, from, to))
 
     GameLogic.makeMove(from, to, state).get shouldEqual expected
   }
