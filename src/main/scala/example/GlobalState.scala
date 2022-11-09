@@ -3,22 +3,30 @@ package example
 import example.models.Piece
 import xyz.bluepitaya.common.Vec2d
 
-case class Move(piece: Piece, from: Vec2d, to: Vec2d)
+sealed trait GameMove
+final case class Move(piece: Piece, from: Vec2d, to: Vec2d) extends GameMove
+final case class CastlingMove(kingMove: Move, rookMove: Move) extends GameMove
 
 case class GameState(
     size: Vec2d,
     pieces: Map[Vec2d, Piece],
-    moveHistory: Vector[Move] = Vector()
+    moveHistory: Vector[GameMove] = Vector()
 ) {
-  val lastMove: Option[Move] = moveHistory.lastOption
+  val lastMove: Option[GameMove] = moveHistory.lastOption
 
   def updatePieces(v: Map[Vec2d, Piece]) = copy(pieces = v)
 
-  def addMoveToHistory(move: Move) =
+  def addMoveToHistory(move: GameMove) =
     copy(moveHistory = moveHistory.appended(move))
 
-  def hasPieceMoved(startPos: Vec2d) = moveHistory
-    .exists(m => m.from == startPos)
+  def hasPieceMoved(startPos: Vec2d) = moveHistory.exists {
+    case Move(piece, from, to) => startPos == from
+    case CastlingMove(kingMove, rookMove) => startPos == kingMove.from ||
+      startPos == rookMove.from
+  }
+
+  def movePiece(move: Move) =
+    copy(pieces = pieces.removed(move.from).updated(move.to, move.piece))
 }
 
 object GlobalState {

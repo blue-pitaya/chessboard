@@ -5,6 +5,8 @@ import example.Move
 import example.Utils.takeWhileInclusive
 import example.models._
 import xyz.bluepitaya.common.Vec2d
+import example.GameMove
+import example.CastlingMove
 
 object PossibleMoves {
 
@@ -119,23 +121,24 @@ object PossibleMoves {
   def getEnPassantMoves(
       pos: Vec2d,
       color: PieceColor,
-      lastMove: Option[Move]
+      lastMove: Option[GameMove]
   ): Set[Vec2d] = lastMove
-    .map { move =>
-      val lastMoveIsNearPawnDoubleUp = move.piece.kind == Pawn &&
-        Math.abs(move.from.y - move.to.y) == 2 &&
-        Math.abs(pos.x - move.to.x) == 1
+    .map {
+      case Move(piece, from, to) =>
+        val lastMoveIsNearPawnDoubleUp = piece.kind == Pawn &&
+          Math.abs(from.y - to.y) == 2 && Math.abs(pos.x - to.x) == 1
 
-      val lastMovedPieceIsOnSameRank = move.to.y == pos.y
+        val lastMovedPieceIsOnSameRank = to.y == pos.y
 
-      lazy val attackStep = color match {
-        case Black => Vec2d(move.to.x - pos.x, -1)
-        case White => Vec2d(move.to.x - pos.x, 1)
-      }
+        lazy val attackStep = color match {
+          case Black => Vec2d(to.x - pos.x, -1)
+          case White => Vec2d(to.x - pos.x, 1)
+        }
 
-      if (lastMoveIsNearPawnDoubleUp && lastMovedPieceIsOnSameRank)
-        Seq(pos + attackStep)
-      else Seq()
+        if (lastMoveIsNearPawnDoubleUp && lastMovedPieceIsOnSameRank)
+          Seq(pos + attackStep)
+        else Seq()
+      case _ => Seq()
     }
     .getOrElse(Seq())
     .toSet
@@ -163,17 +166,20 @@ object PossibleMoves {
       pos: Vec2d,
       piece: Piece,
       state: GameState
-  ): Set[Vec2d] = {
+  ): Set[GameMove] = {
     val currentPieceAttacks = getAttacks(pos, piece, state)
+    val toMove = (toPos: Vec2d) => Move(piece, pos, toPos)
 
     val color = piece.color
     val isOppositeColor =
       (v: Vec2d) => state.pieces.get(v).map(_.color != color)
     val isOppositeColorOrEmpty =
       (v: Vec2d) => isOppositeColor(v).getOrElse(true)
-    val standardMoves = currentPieceAttacks.filter(isOppositeColorOrEmpty)
+    val standardMoves: Set[GameMove] = currentPieceAttacks
+      .filter(isOppositeColorOrEmpty)
+      .map(toMove)
 
-    val moves = piece.kind match {
+    val moves: Set[GameMove] = piece.kind match {
       case Pawn =>
         val isOppositeColorOrNonEmpty =
           (v: Vec2d) => isOppositeColor(v).getOrElse(false)
@@ -193,7 +199,7 @@ object PossibleMoves {
         )
         val enPassantMoves = getEnPassantMoves(pos, color, state.lastMove)
 
-        attackMoves ++ normalMoves ++ enPassantMoves
+        (attackMoves ++ normalMoves ++ enPassantMoves).map(toMove)
 
       case King =>
         val rooks = state
@@ -206,6 +212,7 @@ object PossibleMoves {
         val isAttackOn = (pos: Vec2d) => allAttacks.contains(pos)
         val castleMove = (kingPos: Vec2d, rookPos: Vec2d) =>
           Castling.getCastleKingMove(
+            color,
             kingPos,
             rookPos,
             state.hasPieceMoved,
@@ -219,11 +226,8 @@ object PossibleMoves {
       case _ => standardMoves
     }
 
-    val simulateMove =
-      (to: Vec2d) => GameLogic.forceMove(Move(piece, pos, to), state)
-
-    moves.filter { to =>
-      val simulatedState = simulateMove(to)
+    moves.filter { move =>
+      val simulatedState = GameLogic.forceMove(move, state)
       val attacks = (v: Vec2d, p: Piece) => getAttacks(v, p, simulatedState)
       val enemyAttacks =
         getAllAttacks(simulatedState.pieces, color.opposite, attacks)
@@ -237,4 +241,12 @@ object PossibleMoves {
     .get(pos)
     .map(_getMoves(pos, _, state))
     .getOrElse(Set())
+
+  def getMoveTiles(pos: Vec2d, state: GameState): Map[Vec2d, GameMove] =
+    getMoves(pos: Vec2d, state: GameState)
+      .map {
+        case m @ CastlingMove(kingMove, rookMove) => kingMove.to -> m
+        case m @ Move(piece, from, to)            => to -> m
+      }
+      .toMap
 }

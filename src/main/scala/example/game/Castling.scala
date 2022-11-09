@@ -6,6 +6,9 @@ import example.models.Piece
 import example.models.PieceColor
 import example.models.White
 import xyz.bluepitaya.common.Vec2d
+import example.CastlingMove
+import example.models.King
+import example.models.Rook
 
 // assuming standard chessboard setup
 object Castling {
@@ -29,6 +32,10 @@ object Castling {
     kingPos + step
   }
 
+  private def rookMove(kingPos: Vec2d, rookPos: Vec2d): Vec2d =
+    if (kingPos.x > rookPos.x) kingPos - Vec2d(1, 0)
+    else kingPos + Vec2d(1, 0)
+
   private def kingPath(kingPos: Vec2d, rookPos: Vec2d) = {
     val a = kingPos.x
     val b = kingMove(kingPos, rookPos).x
@@ -39,12 +46,13 @@ object Castling {
 
   // assuming king and rook exists and are same color
   def getCastleKingMove(
+      color: PieceColor,
       kingPos: Vec2d,
       rookPos: Vec2d,
       hasMoved: Vec2d => Boolean,
       isPieceOn: Vec2d => Boolean,
       isAttackOn: Vec2d => Boolean
-  ): Option[Vec2d] = {
+  ): Option[CastlingMove] = {
     lazy val arePiecesOnSameRank = kingPos.y == rookPos.y
     lazy val hasKingMoved = hasMoved(kingPos)
     lazy val hasRookMoved = hasMoved(rookPos)
@@ -58,15 +66,20 @@ object Castling {
     Option.when(
       arePiecesOnSameRank && !hasKingMoved && !hasRookMoved &&
         !arePiecesBetween && !isKingCheckedOnPath
-    )(kingMove(kingPos, rookPos))
+    )(
+      CastlingMove(
+        Move(Piece(King, color), kingPos, kingMove(kingPos, rookPos)),
+        Move(Piece(Rook, color), rookPos, rookMove(kingPos, rookPos))
+      )
+    )
   }
 
   def getMoves(
       color: PieceColor,
       kingPos: Vec2d,
       rooks: Map[Vec2d, Piece],
-      castleMove: (Vec2d, Vec2d) => Option[Vec2d]
-  ): Set[Vec2d] = {
+      castleMove: (Vec2d, Vec2d) => Option[CastlingMove]
+  ): Set[CastlingMove] = {
     rooks
       .toSet[(Vec2d, Piece)]
       .flatMap { case (rookPos, rook) =>

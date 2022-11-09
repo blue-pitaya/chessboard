@@ -130,7 +130,10 @@ object Reducer {
         case x: PieceObj =>
           val updatedObj = x
             .copy(basePosition = (pointerPosition - (x.size * 0.5)))
-          val possibleMoves = PossibleMoves.getMoves(x.gamePosition, gameState)
+          val possibleMoves = PossibleMoves
+            .getMoveTiles(x.gamePosition, gameState)
+            .map(_._1)
+            .toSet
 
           // TODO: function composition
           val nextState = Mutator.updateDrawingObj(uiState, updatedObj)

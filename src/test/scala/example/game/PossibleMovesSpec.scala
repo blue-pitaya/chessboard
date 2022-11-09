@@ -42,7 +42,8 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
       Vec2d(6, 4)
     )
 
-    PossibleMoves.getMoves(Vec2d(4, 3), state) shouldEqual expected
+    PossibleMoves.getMoveTiles(Vec2d(4, 3), state).map(_._1).toSet shouldEqual
+      expected
   }
 
   "bishop moves" should "be diagonal and blocked by pieces" in {
@@ -58,7 +59,8 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
     val expected =
       Set(Vec2d(1, 2), Vec2d(1, 0), Vec2d(3, 0), Vec2d(3, 2), Vec2d(4, 3))
 
-    PossibleMoves.getMoves(Vec2d(2, 1), state) shouldEqual expected
+    PossibleMoves.getMoveTiles(Vec2d(2, 1), state).map(_._1).toSet shouldEqual
+      expected
   }
 
   "bishop" should "not be able to move outside board" in {
@@ -67,7 +69,7 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
     val state = GameState(size = Vec2d(2, 2), pieces = Map(pos -> piece))
     val expected = Set(Vec2d(1, 1))
 
-    PossibleMoves.getMoves(pos, state) shouldEqual expected
+    PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual expected
   }
 
   "rook moves" should "be straight and blocked by pieces" in {
@@ -83,7 +85,8 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
     val expected =
       Set(Vec2d(1, 1), Vec2d(2, 0), Vec2d(3, 1), Vec2d(2, 2), Vec2d(2, 3))
 
-    PossibleMoves.getMoves(Vec2d(2, 1), state) shouldEqual expected
+    PossibleMoves.getMoveTiles(Vec2d(2, 1), state).map(_._1).toSet shouldEqual
+      expected
   }
 
   "queen moves" should "be straight, diagonal and blocked by pieces" in {
@@ -109,7 +112,8 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
       Vec2d(2, 3)
     )
 
-    PossibleMoves.getMoves(Vec2d(2, 1), state) shouldEqual expected
+    PossibleMoves.getMoveTiles(Vec2d(2, 1), state).map(_._1).toSet shouldEqual
+      expected
   }
 
   // starting file in real board (files 1..8) is 2 for white and 7 for black
@@ -119,7 +123,7 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
     val state = GameState(size = Vec2d(1, 4), pieces = Map(pos -> piece))
     val expected = Set(Vec2d(0, 2), Vec2d(0, 3))
 
-    PossibleMoves.getMoves(pos, state) shouldEqual expected
+    PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual expected
   }
 
   "pawn" should
@@ -132,7 +136,8 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
       )
       val expected = Set()
 
-      PossibleMoves.getMoves(pos, state) shouldEqual expected
+      PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual
+        expected
     }
 
   "pawn regular moves" should "be 1 to front" in {
@@ -141,7 +146,7 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
     val state = GameState(size = Vec2d(1, 8), pieces = Map(pos -> piece))
     val expected = Set(Vec2d(0, 4))
 
-    PossibleMoves.getMoves(pos, state) shouldEqual expected
+    PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual expected
   }
 
   "pawn regular moves" should "include possible attacks" in {
@@ -153,7 +158,7 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
     )
     val expected = Set(Vec2d(0, 3), Vec2d(1, 3))
 
-    PossibleMoves.getMoves(pos, state) shouldEqual expected
+    PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual expected
   }
 
   "white pawn" should "be able to do en passant" in {
@@ -165,7 +170,7 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
     ).addMoveToHistory(Move(Piece(Pawn, Black), Vec2d(2, 6), Vec2d(2, 4)))
     val expected = Set(Vec2d(1, 5), Vec2d(2, 5))
 
-    PossibleMoves.getMoves(pos, state) shouldEqual expected
+    PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual expected
   }
 
   "black pawn" should "be able to do en passant" in {
@@ -177,7 +182,7 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
     ).addMoveToHistory(Move(Piece(Pawn, White), Vec2d(0, 1), Vec2d(0, 3)))
     val expected = Set(Vec2d(0, 2), Vec2d(1, 2))
 
-    PossibleMoves.getMoves(pos, state) shouldEqual expected
+    PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual expected
   }
 
   "pawn" should
@@ -190,7 +195,8 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
       ).addMoveToHistory(Move(Piece(Pawn, Black), Vec2d(2, 6), Vec2d(2, 4)))
       val expected = Set(Vec2d(1, 6))
 
-      PossibleMoves.getMoves(pos, state) shouldEqual expected
+      PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual
+        expected
     }
 
   "pawn" should "not be able to go outside board" in {
@@ -199,7 +205,7 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
     val state = GameState(size = Vec2d(1, 8), pieces = Map(pos -> piece))
     val expected = Set()
 
-    PossibleMoves.getMoves(pos, state) shouldEqual expected
+    PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual expected
   }
 
   "king" should "not be able to walk to other king" in {
@@ -216,7 +222,7 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
     )
     val expected = Set(Vec2d(2, 2))
 
-    PossibleMoves.getMoves(pos, state) shouldEqual expected
+    PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual expected
   }
 
   "king" should "not be able to walk to position which is under attack" in {
@@ -232,7 +238,7 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
     )
     val expected = Set(Vec2d(0, 1))
 
-    PossibleMoves.getMoves(pos, state) shouldEqual expected
+    PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual expected
   }
 
   "king" should
@@ -249,7 +255,8 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
       )
       val expected = Set(Vec2d(1, 1))
 
-      PossibleMoves.getMoves(pos, state) shouldEqual expected
+      PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual
+        expected
     }
 
   "king" should "move from check" in {
@@ -261,7 +268,7 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
     )
     val expected = Set(Vec2d(2, 0), Vec2d(2, 2), Vec2d(0, 1))
 
-    PossibleMoves.getMoves(pos, state) shouldEqual expected
+    PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual expected
   }
 
   "piece" should
@@ -278,7 +285,8 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
       )
       val expected = Set()
 
-      PossibleMoves.getMoves(pos, state) shouldEqual expected
+      PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual
+        expected
     }
 
   "piece" should
@@ -295,7 +303,8 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
       )
       val expected = Set(Vec2d(2, 1))
 
-      PossibleMoves.getMoves(pos, state) shouldEqual expected
+      PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual
+        expected
     }
 
   "pawn" should "be able to stop check by doing en passant" in {
@@ -311,7 +320,7 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
     ).addMoveToHistory(Move(Piece(Pawn, White), Vec2d(0, 1), Vec2d(0, 3)))
     val expected = Set(Vec2d(0, 2))
 
-    PossibleMoves.getMoves(pos, state) shouldEqual expected
+    PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual expected
 
   }
 
@@ -329,7 +338,8 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
       )
       val expected = Set()
 
-      PossibleMoves.getMoves(pos, state) shouldEqual expected
+      PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual
+        expected
     }
 
   "king" should
@@ -348,7 +358,8 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
       val expected =
         Set(Vec2d(0, 0), Vec2d(2, 0), Vec2d(0, 2), Vec2d(1, 2), Vec2d(2, 2))
 
-      PossibleMoves.getMoves(pos, state) shouldEqual expected
+      PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual
+        expected
     }
 
   private val whiteKingStartPos = Vec2d(4, 0)
@@ -368,7 +379,7 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
       Set(Vec2d(3, 0), Vec2d(5, 0), Vec2d(3, 1), Vec2d(4, 1), Vec2d(5, 1))
     val expected = normalMoves
 
-    PossibleMoves.getMoves(pos, state) shouldEqual expected
+    PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual expected
   }
 
   "king" should "not be able to castle when rook has already moved" in {
@@ -387,7 +398,7 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
       Set(Vec2d(3, 0), Vec2d(5, 0), Vec2d(3, 1), Vec2d(4, 1), Vec2d(5, 1))
     val expected = normalMoves
 
-    PossibleMoves.getMoves(pos, state) shouldEqual expected
+    PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual expected
   }
 
   "king" should "not be able to castle when there are pieces between" in {
@@ -405,7 +416,7 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
       Set(Vec2d(3, 0), Vec2d(5, 0), Vec2d(3, 1), Vec2d(4, 1), Vec2d(5, 1))
     val expected = normalMoves
 
-    PossibleMoves.getMoves(pos, state) shouldEqual expected
+    PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual expected
   }
 
   "king" should "not be able to castle when is checked" in {
@@ -421,7 +432,7 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
     )
     val expected = Set(Vec2d(3, 0), Vec2d(5, 0), Vec2d(3, 1), Vec2d(5, 1))
 
-    PossibleMoves.getMoves(pos, state) shouldEqual expected
+    PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual expected
   }
 
   "king" should "not be able to castle when is check on path to castle" in {
@@ -437,7 +448,7 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
     )
     val expected = Set(Vec2d(5, 0), Vec2d(4, 1), Vec2d(5, 1))
 
-    PossibleMoves.getMoves(pos, state) shouldEqual expected
+    PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual expected
   }
 
   "king" should "be able to castle" in {
@@ -451,25 +462,6 @@ class PossibleMovesSpec extends AnyFlatSpec with Matchers {
       Set(Vec2d(3, 0), Vec2d(5, 0), Vec2d(3, 1), Vec2d(4, 1), Vec2d(5, 1))
     val expected = normalMoves ++ Set(Vec2d(2, 0))
 
-    PossibleMoves.getMoves(pos, state) shouldEqual expected
+    PossibleMoves.getMoveTiles(pos, state).map(_._1).toSet shouldEqual expected
   }
-
-  // custom board castling (if not work comment it, i just tested it for fun)
-  "custom board king" should
-    "be not be able to castle when is checked after castling" in {
-      val pos = Vec2d(6, 0)
-      val king = Piece(King, White)
-      val state = GameState(
-        size = Vec2d(8, 8),
-        pieces = Map(
-          pos -> king,
-          Vec2d(1, 0) -> Piece(Rook, White),
-          Vec2d(0, 0) -> Piece(Rook, Black)
-        )
-      )
-      val expected =
-        Set(Vec2d(5, 0), Vec2d(5, 1), Vec2d(6, 1), Vec2d(7, 1), Vec2d(7, 0))
-
-      PossibleMoves.getMoves(pos, state) shouldEqual expected
-    }
 }
