@@ -19,5 +19,6 @@ lazy val root = (project in file("."))
       .withESFeatures(_.withESVersion(ESVersion.ES2021))
     },
     Compile / fastLinkJS / scalaJSLinkerOutputDirectory := baseDirectory.value / "ui/src/scalajs/",
+    Compile / fullLinkJS / scalaJSLinkerOutputDirectory := baseDirectory.value / "ui/src/scalajs/",
   )
   .enablePlugins(ScalaJSPlugin)
