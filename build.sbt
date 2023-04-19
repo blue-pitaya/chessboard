@@ -1,24 +1,31 @@
-import org.scalajs.linker.interface.OutputPatterns
 import org.scalajs.linker.interface.ESVersion
 import org.scalajs.linker.interface.OutputPatterns
+import org.scalajs.linker.interface.ModuleSplitStyle
 
-ThisBuild / scalaVersion     := "2.13.8"
-ThisBuild / version          := "0.1.0-SNAPSHOT"
-ThisBuild / organization     := "com.example"
+ThisBuild / scalaVersion := "2.13.8"
+ThisBuild / version := "0.1.0-SNAPSHOT"
+ThisBuild / organization := "com.example"
 ThisBuild / organizationName := "example"
 
 lazy val root = (project in file("."))
   .settings(
     name := "chessboard",
+    libraryDependencies += "com.raquo" %%% "laminar" % "15.0.0-M7",
+    libraryDependencies += "com.raquo" %%% "waypoint" % "6.0.0-M4",
     libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.13" % Test,
     libraryDependencies += "xyz.bluepitaya" %%% "common-utils" % "1.0",
+    libraryDependencies += "org.typelevel" %%% "cats-core" % "2.8.0",
     libraryDependencies += "org.typelevel" %%% "cats-effect" % "3.3.14",
+    libraryDependencies += "xyz.bluepitaya" %%% "laminar-dragging" % "1.0",
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.ESModule)
-      .withOutputPatterns(OutputPatterns.fromJSFile("%s.mjs"))
-      .withESFeatures(_.withESVersion(ESVersion.ES2021))
+        .withOutputPatterns(OutputPatterns.fromJSFile("%s.js"))
+        .withESFeatures(_.withESVersion(ESVersion.ES2021))
     },
-    Compile / fastLinkJS / scalaJSLinkerOutputDirectory := baseDirectory.value / "ui/src/scalajs/",
-    Compile / fullLinkJS / scalaJSLinkerOutputDirectory := baseDirectory.value / "ui/src/scalajs/",
+    scalaJSUseMainModuleInitializer := true,
+    Compile / fastLinkJS / scalaJSLinkerOutputDirectory :=
+      baseDirectory.value / "ui/sccode/",
+    Compile / fullLinkJS / scalaJSLinkerOutputDirectory :=
+      baseDirectory.value / "ui/sccode/"
   )
   .enablePlugins(ScalaJSPlugin)

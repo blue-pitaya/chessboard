@@ -1,5 +1,10 @@
 package example
 
+import xyz.bluepitaya.common.Vec2d
+import xyz.bluepitaya.common.Vec2f
+import com.raquo.laminar.api.L._
+import org.scalajs.dom
+
 object Utils {
   def takeWhileInclusive[A](
       start: A,
@@ -14,4 +19,8 @@ object Utils {
 
     _f(start, Seq())
   }
+
+  def transformStr(v: Vec2d) = s"translate(${v.x}, ${v.y})"
+  def transformCenterStr(v: Vec2d) = s"translate(${v.x}, ${v.y})"
+  def toPx(n: Int) = s"${n}px"
 }

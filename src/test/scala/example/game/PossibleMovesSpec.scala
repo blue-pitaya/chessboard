@@ -1,21 +1,11 @@
 package example.game
 
-import example.GameState
-import example.models.Bishop
-import example.models.Black
-import example.models.HexColor
-import example.models.King
-import example.models.Knight
-import example.models.Pawn
-import example.models.Piece
-import example.models.Queen
-import example.models.Rook
-import example.models.White
+import example.models._
+import example.game._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import scala.scalajs.js.JSConverters._
-import example.Move
 import xyz.bluepitaya.common.Vec2d
 
 class PossibleMovesSpec extends AnyFlatSpec with Matchers {

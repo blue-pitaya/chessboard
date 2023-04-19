@@ -1,12 +1,8 @@
 package example.game
 
-import example.GameState
-import example.Move
 import example.Utils.takeWhileInclusive
 import example.models._
 import xyz.bluepitaya.common.Vec2d
-import example.GameMove
-import example.CastlingMove
 
 object PossibleMoves {
 

@@ -1,12 +1,10 @@
 package example.game
 
-import example.Move
 import example.models.Black
 import example.models.Piece
 import example.models.PieceColor
 import example.models.White
 import xyz.bluepitaya.common.Vec2d
-import example.CastlingMove
 import example.models.King
 import example.models.Rook
 

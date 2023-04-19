@@ -14,7 +14,6 @@ data/
 ui/src/scalajs
 
 # Auto-generated from vue create
-
 .DS_Store
 node_modules
 /dist
@@ -38,3 +37,7 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Scala.js
+ui/sccode/
+node_modules

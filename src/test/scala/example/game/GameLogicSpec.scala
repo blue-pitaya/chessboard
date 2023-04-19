@@ -1,12 +1,11 @@
 package example.game
 
-import example.GameState
 import example.models._
+import example.game._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import scala.scalajs.js.JSConverters._
-import example.Move
 import xyz.bluepitaya.common.Vec2d
 
 class GameLogicSpec extends AnyFlatSpec with Matchers {
