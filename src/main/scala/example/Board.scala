@@ -21,6 +21,7 @@ object Board {
     val draggingModule = Dragging.createModule[String]()
     val highlightedTiles = Var(Set[Vec2d]())
     val gameState = Var[GameState](GameState.standardBoard)
+    val pieceObjs = Var[List[PieceObj]](List())
 
     val boardSettings = new BoardSettings {
       override val sizeInPx: Vec2d = Settings.boardDimens.realSizeInPx
@@ -29,21 +30,29 @@ object Board {
         Settings.boardDimens // FIXME: rewrite to boardSettings
     }
 
-    val piecesComponentSignal = gameState
+    def moveToBack(id: String): Unit = pieceObjs.update { v =>
+      val nextValue = for {
+        po <- v.find(_.id == id)
+        rest = v.filter(_.id != id)
+      } yield (rest :+ po)
+
+      nextValue.getOrElse(v)
+    }
+
+    val piecesComponentSignal = pieceObjs
       .signal
-      .map { gs =>
-        gs.pieces
-          .zipWithIndex
-          .map { case ((pos, piece), idx) =>
+      .withCurrentValueOf(gameState)
+      .map { case (pieceObjs, gs) =>
+        pieceObjs
+          .map { po =>
             Piece.component(
-              id = idx.toString(),
-              position = pos,
-              piece = piece,
-              gameState = gs,
-              draggingModule = draggingModule,
-              highlightTiles = highlightedTiles.set,
-              boardSettings = boardSettings,
-              updateGameState = gameState.set
+              po,
+              gs,
+              draggingModule,
+              highlightedTiles.set,
+              boardSettings,
+              gameState.set,
+              moveToBack
             )
           }
           .toList
@@ -58,7 +67,8 @@ object Board {
       svg.height(Utils.toPx(boardSettings.boardDimens.realSizeInPx.y)),
       tilesComponent,
       children <-- piecesComponentSignal,
-      draggingModule.documentBindings
+      draggingModule.documentBindings,
+      gameState.signal.map(gs => PieceObj.fromPieces(gs.pieces)) --> pieceObjs
     )
   }
 }

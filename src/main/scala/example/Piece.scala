@@ -17,18 +17,32 @@ import example.game.GameLogic
 import example.components.BoardSettings
 import example.game.GameState
 
+case class PieceObj(id: String, position: Vec2d, piece: models.Piece)
+
+object PieceObj {
+  def fromPieces(pieces: Map[Vec2d, models.Piece]): List[PieceObj] = pieces
+    .zipWithIndex
+    .map { case ((pos, piece), idx) =>
+      PieceObj(idx.toString(), pos, piece)
+    }
+    .toList
+}
+
 object Piece {
   def component(
-      id: String,
-      position: Vec2d,
-      piece: models.Piece,
+      pieceObj: PieceObj,
       gameState: GameState,
       draggingModule: Dragging.DraggingModule[String],
       highlightTiles: Set[Vec2d] => Unit,
       boardSettings: BoardSettings,
       // TODO: makeMove
-      updateGameState: GameState => Unit
+      updateGameState: GameState => Unit,
+      movePieceToFront: String => Unit
   ) = {
+    val id = pieceObj.id
+    val position = pieceObj.position
+    val piece = pieceObj.piece
+
     val renderPosition =
       Var[Vec2d](Renderer.toRealPos(position, boardSettings.boardDimens))
 
@@ -51,6 +65,7 @@ object Piece {
               .toSet
             highlightTiles(possibleMoves)
             renderPosition.set(pos.toVec2d - (size / 2))
+            movePieceToFront(id)
 
           case RelativeDragging.Event(_, End, pos) =>
             val possibleMoves = PossibleMoves
