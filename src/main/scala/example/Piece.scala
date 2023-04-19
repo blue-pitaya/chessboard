@@ -14,21 +14,26 @@ import xyz.bluepitaya.laminardragging.RelativeDragging
 
 import scala.util.Random
 import example.game.GameLogic
+import example.components.BoardSettings
+import example.game.GameState
 
 object Piece {
   def component(
       id: String,
       position: Vec2d,
       piece: models.Piece,
-      boardState: Board.State,
-      container: dom.Element
+      gameState: GameState,
+      draggingModule: Dragging.DraggingModule[String],
+      highlightTiles: Set[Vec2d] => Unit,
+      boardSettings: BoardSettings,
+      // TODO: makeMove
+      updateGameState: GameState => Unit
   ) = {
     val renderPosition =
-      Var[Vec2d](Renderer.toRealPos(position, boardState.boardDimens))
+      Var[Vec2d](Renderer.toRealPos(position, boardSettings.boardDimens))
 
-    val size = Renderer.getTileSize(boardState.boardDimens)
+    val size = Renderer.getTileSize(boardSettings.boardDimens)
     val imagePath = resolveImagePath(piece)
-    val draggingModule = boardState.draggingModule
 
     import DragEventKind._
     val draggingObserver = Observer[
@@ -41,27 +46,26 @@ object Piece {
       case Right(event) => event match {
           case RelativeDragging.Event(_, Start, pos) =>
             val possibleMoves = PossibleMoves
-              .getMoveTiles(position, boardState.gameState.now())
+              .getMoveTiles(position, gameState)
               .map(_._1)
               .toSet
-            boardState.highlightedTiles.set(possibleMoves)
+            highlightTiles(possibleMoves)
             renderPosition.set(pos.toVec2d - (size / 2))
 
           case RelativeDragging.Event(_, End, pos) =>
             val possibleMoves = PossibleMoves
-              .getMoveTiles(position, boardState.gameState.now())
+              .getMoveTiles(position, gameState)
               .map(_._1)
               .toSet
             renderPosition
-              .set(Renderer.toRealPos(position, boardState.boardDimens))
-            boardState.highlightedTiles.set(Set())
+              .set(Renderer.toRealPos(position, boardSettings.boardDimens))
+            highlightTiles(Set())
             val logicPosition = Renderer
-              .toLogicPostion(pos.toVec2d, boardState.boardDimens)
+              .toLogicPostion(pos.toVec2d, boardSettings.boardDimens)
 
             if (possibleMoves.contains(logicPosition)) {
-              val x = GameLogic
-                .makeMove(position, logicPosition, boardState.gameState.now())
-              x.foreach(boardState.gameState.set)
+              val x = GameLogic.makeMove(position, logicPosition, gameState)
+              x.foreach(updateGameState)
             }
 
           case RelativeDragging.Event(_, _, pos) =>
@@ -69,15 +73,17 @@ object Piece {
         }
     }
 
+    val draggingId = s"piece-$id"
+
     import Utils._
     svg.image(
       svg.transform <-- renderPosition.signal.map(transformStr),
       svg.xlinkHref(imagePath),
       svg.width(toPx(size.x)),
       svg.height(toPx(size.y)),
-      draggingModule.componentBindings(id),
+      draggingModule.componentBindings(draggingId),
       draggingModule
-        .componentEvents(id)
+        .componentEvents(draggingId)
         .map(RelativeDragging.getMappingDynamic(getContainer)) -->
         draggingObserver
     )
