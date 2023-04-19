@@ -1,12 +1,10 @@
 package example.game
 
-import example.models.Black
+import example.models.King
 import example.models.Piece
 import example.models.PieceColor
-import example.models.White
-import xyz.bluepitaya.common.Vec2d
-import example.models.King
 import example.models.Rook
+import xyz.bluepitaya.common.Vec2d
 
 // assuming standard chessboard setup
 object Castling {

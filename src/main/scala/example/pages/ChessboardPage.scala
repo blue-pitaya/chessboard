@@ -1,9 +1,7 @@
 package example.pages
 
 import com.raquo.laminar.api.L._
-import example.Styles
-import org.scalajs.dom
-import example.Board
+import example.components.Board
 
 object ChessboardPage {
   private val headerText = """
@@ -13,6 +11,12 @@ object ChessboardPage {
     """.stripMargin.trim()
 
   def component() = {
-    div(p(headerText), div(Styles.centerElement, Board.component()))
+    div(
+      p(headerText),
+      div(
+        cls("w-full h-full flex flex-row items-center justify-center"),
+        Board.component()
+      )
+    )
   }
 }

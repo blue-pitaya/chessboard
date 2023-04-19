@@ -9,6 +9,7 @@ ThisBuild / organizationName := "example"
 
 lazy val root = (project in file("."))
   .settings(
+    scalacOptions := Seq("-Wunused:imports"),
     name := "chessboard",
     libraryDependencies += "com.raquo" %%% "laminar" % "15.0.0-M7",
     libraryDependencies += "com.raquo" %%% "waypoint" % "6.0.0-M4",

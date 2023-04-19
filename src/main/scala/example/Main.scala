@@ -1,8 +1,8 @@
 package example
 
 import com.raquo.laminar.api.L._
-import org.scalajs.dom
 import example.pages.ChessboardPage
+import org.scalajs.dom
 
 object Main extends App {
   val app = ChessboardPage.component()

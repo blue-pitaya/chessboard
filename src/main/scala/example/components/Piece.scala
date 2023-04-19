@@ -1,21 +1,15 @@
-package example
+package example.components
 
 import com.raquo.laminar.api.L._
-import example.game.GameMove
+import example.game.GameLogic
+import example.game.GameState
 import example.game.PossibleMoves
 import example.models
 import org.scalajs.dom
 import xyz.bluepitaya.common.Vec2d
-import xyz.bluepitaya.common.Vec2f
-import xyz.bluepitaya.laminardragging.DeltaDragging
 import xyz.bluepitaya.laminardragging.DragEventKind
 import xyz.bluepitaya.laminardragging.Dragging
 import xyz.bluepitaya.laminardragging.RelativeDragging
-
-import scala.util.Random
-import example.game.GameLogic
-import example.components.BoardSettings
-import example.game.GameState
 
 case class PieceObj(id: String, position: Vec2d, piece: models.Piece)
 
@@ -39,14 +33,16 @@ object Piece {
       updateGameState: GameState => Unit,
       movePieceToFront: String => Unit
   ) = {
+    import example.Utils._
+
     val id = pieceObj.id
     val position = pieceObj.position
     val piece = pieceObj.piece
 
     val renderPosition =
-      Var[Vec2d](Renderer.toRealPos(position, boardSettings.boardDimens))
+      Var[Vec2d](toRealPos(position, gameState.size, boardSettings.sizeInPx))
 
-    val size = Renderer.getTileSize(boardSettings.boardDimens)
+    val size = getTileSize(gameState.size, boardSettings.sizeInPx)
     val imagePath = resolveImagePath(piece)
 
     import DragEventKind._
@@ -73,10 +69,13 @@ object Piece {
               .map(_._1)
               .toSet
             renderPosition
-              .set(Renderer.toRealPos(position, boardSettings.boardDimens))
+              .set(toRealPos(position, gameState.size, boardSettings.sizeInPx))
             highlightTiles(Set())
-            val logicPosition = Renderer
-              .toLogicPostion(pos.toVec2d, boardSettings.boardDimens)
+            val logicPosition = toLogicPostion(
+              pos.toVec2d,
+              gameState.size,
+              boardSettings.sizeInPx
+            )
 
             if (possibleMoves.contains(logicPosition)) {
               val x = GameLogic.makeMove(position, logicPosition, gameState)
@@ -90,7 +89,6 @@ object Piece {
 
     val draggingId = s"piece-$id"
 
-    import Utils._
     svg.image(
       svg.transform <-- renderPosition.signal.map(transformStr),
       svg.xlinkHref(imagePath),

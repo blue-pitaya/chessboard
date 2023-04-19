@@ -1,9 +1,6 @@
 package example
 
 import xyz.bluepitaya.common.Vec2d
-import xyz.bluepitaya.common.Vec2f
-import com.raquo.laminar.api.L._
-import org.scalajs.dom
 
 object Utils {
   def takeWhileInclusive[A](
@@ -21,6 +18,31 @@ object Utils {
   }
 
   def transformStr(v: Vec2d) = s"translate(${v.x}, ${v.y})"
-  def transformCenterStr(v: Vec2d) = s"translate(${v.x}, ${v.y})"
+
   def toPx(n: Int) = s"${n}px"
+
+  def getTileSize(logicSize: Vec2d, renderSizeInPx: Vec2d): Vec2d =
+    Vec2d(renderSizeInPx.x / logicSize.x, renderSizeInPx.y / logicSize.y)
+
+  def toRealPos(
+      logicPos: Vec2d,
+      logicSize: Vec2d,
+      renderSizeInPx: Vec2d
+  ): Vec2d = {
+    val tileSize = getTileSize(logicSize, renderSizeInPx)
+    val xInPx = logicPos.x * tileSize.x
+    // note: board positions and render positions has opposite y axis
+    val yInPx = renderSizeInPx.y - tileSize.y - (logicPos.y * tileSize.y)
+
+    Vec2d(xInPx, yInPx)
+  }
+
+  def toLogicPostion(
+      pos: Vec2d,
+      logicSize: Vec2d,
+      renderSizeInPx: Vec2d
+  ): Vec2d = Vec2d(
+    pos.x / getTileSize(logicSize, renderSizeInPx).x,
+    (renderSizeInPx.y - pos.y) / getTileSize(logicSize, renderSizeInPx).y
+  )
 }

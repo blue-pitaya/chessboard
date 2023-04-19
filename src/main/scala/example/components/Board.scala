@@ -1,21 +1,23 @@
-package example
+package example.components
 
 import com.raquo.laminar.api.L._
-import example.components.BoardSettings
+import example.Utils
 import example.components.Tiles
-import example.game.CastlingMove
-import example.game.GameLogic
-import example.game.GameMove
 import example.game.GameState
-import example.game.Move
-import org.scalajs.dom
 import xyz.bluepitaya.common.Vec2d
 import xyz.bluepitaya.laminardragging.Dragging
 
-import scala.util.Random
+case class TileColorset(dark: String, light: String)
+
+trait BoardSettings {
+  val sizeInPx: Vec2d
+  val colorset: TileColorset
+}
 
 object Board {
   val svgElementId = "chessboard"
+  val boardSizeInPx = Vec2d(800, 800)
+  val tileColorset = TileColorset(dark = "#b58863", light = "#f0d9b5")
 
   def component() = {
     val draggingModule = Dragging.createModule[String]()
@@ -24,10 +26,8 @@ object Board {
     val pieceObjs = Var[List[PieceObj]](List())
 
     val boardSettings = new BoardSettings {
-      override val sizeInPx: Vec2d = Settings.boardDimens.realSizeInPx
-      override val colorset: TileColorset = Settings.tileColorset
-      override val boardDimens: BoardDimens =
-        Settings.boardDimens // FIXME: rewrite to boardSettings
+      override val sizeInPx: Vec2d = boardSizeInPx
+      override val colorset: TileColorset = tileColorset
     }
 
     def moveToBack(id: String): Unit = pieceObjs.update { v =>
@@ -63,8 +63,8 @@ object Board {
 
     svg.svg(
       svg.idAttr(svgElementId),
-      svg.width(Utils.toPx(boardSettings.boardDimens.realSizeInPx.x)),
-      svg.height(Utils.toPx(boardSettings.boardDimens.realSizeInPx.y)),
+      svg.width(Utils.toPx(boardSettings.sizeInPx.x)),
+      svg.height(Utils.toPx(boardSettings.sizeInPx.y)),
       tilesComponent,
       children <-- piecesComponentSignal,
       draggingModule.documentBindings,
