@@ -1,3 +1,3 @@
-# Chessboard written in scala.js and vue
+# Chessboard written in Laminar
 
-work in progress
+work in progress :)
