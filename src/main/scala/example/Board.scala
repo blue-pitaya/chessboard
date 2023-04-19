@@ -14,10 +14,11 @@ import example.game.CastlingMove
 import example.game.Move
 import example.game.GameLogic
 
-//FIXME: relative draggin indeed dont work on inContext as expected
 //FIXME: remove split pieces, add Pieces.component (like tiles)
 
 object Board {
+  val svgElementId = "chessboard"
+
   case class State(
       boardDimens: BoardDimens,
       tileColorset: TileColorset,
@@ -64,6 +65,7 @@ object Board {
     )
 
     svg.svg(
+      svg.idAttr(svgElementId),
       svg.width(Utils.toPx(state.boardDimens.realSizeInPx.x)),
       svg.height(Utils.toPx(state.boardDimens.realSizeInPx.y)),
       tilesComponent,

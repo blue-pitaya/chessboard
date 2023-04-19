@@ -31,35 +31,42 @@ object Piece {
     val draggingModule = boardState.draggingModule
 
     import DragEventKind._
-    val draggingObserver = Observer[RelativeDragging.Event] { e =>
-      e match {
-        case RelativeDragging.Event(_, Start, pos) =>
-          val possibleMoves = PossibleMoves
-            .getMoveTiles(position, boardState.gameState.now())
-            .map(_._1)
-            .toSet
-          boardState.highlightedTiles.set(possibleMoves)
-          renderPosition.set(pos.toVec2d - (size / 2))
-        case RelativeDragging.Event(_, End, pos) =>
-          val possibleMoves = PossibleMoves
-            .getMoveTiles(position, boardState.gameState.now())
-            .map(_._1)
-            .toSet
-          renderPosition
-            .set(Renderer.toRealPos(position, boardState.boardDimens))
-          boardState.highlightedTiles.set(Set())
-          val logicPosition = Renderer
-            .toLogicPostion(pos.toVec2d, boardState.boardDimens)
+    val draggingObserver = Observer[
+      Either[RelativeDragging.ContainerNotFound, RelativeDragging.Event]
+    ] {
+      case Left(error) => dom
+          .console
+          .error(s"Dragging error on ${error.kind}. No parent container found.")
 
-          if (possibleMoves.contains(logicPosition)) {
-            val x = GameLogic
-              .makeMove(position, logicPosition, boardState.gameState.now())
-            x.foreach(boardState.gameState.set)
-          }
+      case Right(event) => event match {
+          case RelativeDragging.Event(_, Start, pos) =>
+            val possibleMoves = PossibleMoves
+              .getMoveTiles(position, boardState.gameState.now())
+              .map(_._1)
+              .toSet
+            boardState.highlightedTiles.set(possibleMoves)
+            renderPosition.set(pos.toVec2d - (size / 2))
 
-        case RelativeDragging.Event(_, _, pos) => renderPosition
-            .set(pos.toVec2d - (size / 2))
-      }
+          case RelativeDragging.Event(_, End, pos) =>
+            val possibleMoves = PossibleMoves
+              .getMoveTiles(position, boardState.gameState.now())
+              .map(_._1)
+              .toSet
+            renderPosition
+              .set(Renderer.toRealPos(position, boardState.boardDimens))
+            boardState.highlightedTiles.set(Set())
+            val logicPosition = Renderer
+              .toLogicPostion(pos.toVec2d, boardState.boardDimens)
+
+            if (possibleMoves.contains(logicPosition)) {
+              val x = GameLogic
+                .makeMove(position, logicPosition, boardState.gameState.now())
+              x.foreach(boardState.gameState.set)
+            }
+
+          case RelativeDragging.Event(_, _, pos) =>
+            renderPosition.set(pos.toVec2d - (size / 2))
+        }
     }
 
     import Utils._
@@ -71,9 +78,13 @@ object Piece {
       draggingModule.componentBindings(id),
       draggingModule
         .componentEvents(id)
-        .map(RelativeDragging.getMapping(container)) --> draggingObserver
+        .map(RelativeDragging.getMappingDynamic(getContainer)) -->
+        draggingObserver
     )
   }
+
+  private def getContainer(el: dom.Element): Boolean =
+    Option(el.getAttribute("id")).map(_ == Board.svgElementId).getOrElse(false)
 
   private def resolveImagePath(piece: models.Piece) = {
     val color = piece.color.toString().toLowerCase()
