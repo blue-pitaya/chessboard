@@ -4,8 +4,7 @@ import com.raquo.laminar.api.L._
 import example.Utils
 import example.components.Tiles
 import example.game.GameState
-import xyz.bluepitaya.common.Vec2d
-import xyz.bluepitaya.laminardragging.Dragging
+import example.game.Vec2d
 
 case class TileColorset(dark: String, light: String)
 
@@ -20,7 +19,7 @@ object Board {
   val tileColorset = TileColorset(dark = "#b58863", light = "#f0d9b5")
 
   def component() = {
-    val draggingModule = Dragging.createModule[String]()
+    // val draggingModule = Dragging.createModule[String]()
     val highlightedTiles = Var(Set[Vec2d]())
     val gameState = Var[GameState](GameState.standardBoard)
     val pieceObjs = Var[List[PieceObj]](List())
@@ -48,7 +47,7 @@ object Board {
             Piece.component(
               po,
               gs,
-              draggingModule,
+              // draggingModule,
               highlightedTiles.set,
               boardSettings,
               gameState.set,
@@ -67,7 +66,7 @@ object Board {
       svg.height(Utils.toPx(boardSettings.sizeInPx.y)),
       tilesComponent,
       children <-- piecesComponentSignal,
-      draggingModule.documentBindings,
+      // draggingModule.documentBindings,
       gameState.signal.map(gs => PieceObj.fromPieces(gs.pieces)) --> pieceObjs
     )
   }

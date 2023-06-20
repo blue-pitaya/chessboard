@@ -1,6 +1,6 @@
 package example
 
-import xyz.bluepitaya.common.Vec2d
+import example.game.Vec2d
 
 object Utils {
   def takeWhileInclusive[A](

@@ -2,7 +2,6 @@ package example.game
 
 import example.Utils.takeWhileInclusive
 import example.models._
-import xyz.bluepitaya.common.Vec2d
 
 object PossibleMoves {
 

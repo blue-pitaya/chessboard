@@ -2,7 +2,7 @@ package example.components
 
 import com.raquo.laminar.api.L._
 import example.game.GameState
-import xyz.bluepitaya.common.Vec2d
+import example.game.Vec2d
 
 object Tiles {
   def component(

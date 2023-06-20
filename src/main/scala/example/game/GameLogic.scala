@@ -1,7 +1,6 @@
 package example.game
 
 import example.models._
-import xyz.bluepitaya.common.Vec2d
 
 object GameLogic {
   // returns None if move is not en passant, position of piece to kill otherwise
