@@ -17,7 +17,7 @@ lazy val root = (project in file("."))
     libraryDependencies += "xyz.bluepitaya" %%% "common-utils" % "1.0",
     libraryDependencies += "org.typelevel" %%% "cats-core" % "2.8.0",
     libraryDependencies += "org.typelevel" %%% "cats-effect" % "3.3.14",
-    libraryDependencies += "xyz.bluepitaya" %%% "laminar-dragging" % "1.0",
+    libraryDependencies += "dev.bluepitaya" %%% "laminar-dragging" % "1.0",
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.ESModule)
         .withOutputPatterns(OutputPatterns.fromJSFile("%s.js"))

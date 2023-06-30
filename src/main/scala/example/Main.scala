@@ -1,11 +1,11 @@
 package example
 
 import com.raquo.laminar.api.L._
-import example.pages.ChessboardPage
 import org.scalajs.dom
+import example.pages.creator.CreatorPage
 
 object Main extends App {
-  val app = ChessboardPage.component()
+  val app = CreatorPage.component()
 
   def containerNode = dom.document.querySelector("#app")
   render(containerNode, app)
