@@ -3,16 +3,22 @@ package example.pages.creator
 import com.raquo.laminar.api.L._
 import example.pages.creator.Models.PieceColor._
 import example.pages.creator.Models.PieceKind._
+import org.scalajs.dom
 
 import Models._
+import example.game.Vec2d
+import dev.bluepitaya.laminardragging.Dragging
 
 object PiecePicker {
   case class PieceToPick(piece: Piece, imgPath: String)
 
   sealed trait Event
-  case class PieceDraggingStart(piece: Piece) extends Event
+  case class PiecePicked(e: Dragging.Event) extends Event
 
-  def component(observer: Observer[Event]): Element = {
+  def component(
+      observer: Observer[Event],
+      draggingModule: Dragging.DraggingModule[Piece]
+  ): Element = {
     val whitePieces = pieces(PieceColor.White).map(pieceToPick)
     val blackPieces = pieces(PieceColor.Black).map(pieceToPick)
 
@@ -21,11 +27,11 @@ object PiecePicker {
       cls("flex flex-row bg-stone-800"),
       div(
         cls("flex flex-col"),
-        whitePieces.map(v => renderPieceToPick(v, observer))
+        whitePieces.map(v => renderPieceToPick(v, draggingModule, observer))
       ),
       div(
         cls("flex flex-col"),
-        blackPieces.map(v => renderPieceToPick(v, observer))
+        blackPieces.map(v => renderPieceToPick(v, draggingModule, observer))
       )
     )
   }
@@ -56,11 +62,38 @@ object PiecePicker {
 
   def renderPieceToPick(
       pieceToPick: PieceToPick,
+      draggingModule: Dragging.DraggingModule[Piece],
       observer: Observer[Event]
   ): Element = svg.svg(
     svg.width("100"),
     svg.height("100"),
-    svg
-      .image(svg.href(pieceToPick.imgPath), svg.width("100"), svg.height("100"))
+    svg.image(
+      svg.href(pieceToPick.imgPath),
+      svg.width("100"),
+      svg.height("100")
+    ),
+    draggingModule.componentBindings(pieceToPick.piece),
+    draggingModule
+      .componentEvents(pieceToPick.piece)
+      .map(e => PiecePicked(e)) --> observer
+    // onPointerDown
+    //  .map(toPosition)
+    //  .map(p => PieceDraggingStart(piece = pieceToPick.piece, position = p)) -->
+    //  observer
   )
+
+  private def toPosition(e: dom.PointerEvent): Vec2d =
+    Vec2d(e.pageX.toInt, e.pageY.toInt)
+
+  // private def getRelativePosition(
+  //    e: dom.MouseEvent,
+  //    container: dom.Element
+  // ): Vec2d = {
+  //  val rect = container.getBoundingClientRect()
+  //  val x = e.pageX - (rect.x + dom.window.pageXOffset)
+  //  val y = e.pageY - (rect.y + dom.window.pageYOffset)
+
+  //  Vec2d(x.toInt, y.toInt)
+  // }
+
 }

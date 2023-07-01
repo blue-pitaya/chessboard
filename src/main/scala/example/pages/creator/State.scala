@@ -1,12 +1,18 @@
 package example.pages.creator
 
-//case class BoardSize(w: Var[Int], h: Var[Int])
+import com.raquo.laminar.api.L._
+import example.game.Vec2d
 
-case class State(boardState: BoardContainer.State)
+case class DraggingPieceState(piece: Models.Piece, position: Vec2d)
+case class State(
+    boardState: BoardContainer.State,
+    draggingPieceState: Var[Option[DraggingPieceState]]
+)
 
 object State {
-  def init = State(
-    // boardSize = BoardSize(w = Var(3), h = Var(3)),
-    boardState = BoardContainer.State.empty
+  def init(boardLogicSize: Vec2d) = State(
+    boardState = BoardContainer
+      .State(boardLogicSize = boardLogicSize, boardRealSize = Vec2d(800, 800)),
+    draggingPieceState = Var(None)
   )
 }
