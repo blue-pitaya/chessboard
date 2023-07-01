@@ -1,11 +1,12 @@
 package example.pages.creator
 
-import com.raquo.laminar.api.L._
+//case class BoardSize(w: Var[Int], h: Var[Int])
 
-case class BoardSize(w: Var[Int], h: Var[Int])
-
-case class State(boardSize: BoardSize)
+case class State(boardState: BoardContainer.State)
 
 object State {
-  def init = State(boardSize = BoardSize(w = Var(3), h = Var(3)))
+  def init = State(
+    // boardSize = BoardSize(w = Var(3), h = Var(3)),
+    boardState = BoardContainer.State.empty
+  )
 }

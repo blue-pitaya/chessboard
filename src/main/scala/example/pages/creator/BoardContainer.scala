@@ -5,15 +5,17 @@ import example.game.Vec2d
 
 object BoardContainer {
   case class State(boardLogicSize: Vec2d, boardRealSize: Vec2d)
+  object State {
+    def empty = State(boardLogicSize = Vec2d.zero, boardRealSize = Vec2d.zero)
+  }
+
   case class TileState(position: Vec2d, size: Int, hexColor: String)
 
   def component(state: State): SvgElement = {
     val tileStates = createTiles(state)
 
     svg.svg(
-      svg.width("800px"),
-      svg.height("800px"),
-      svg.cls("bg-yellow-100"),
+      svg.cls("min-w-[800px] h-[800px] bg-stone-800"),
       svg.g(tileStates.map(renderTile))
     )
   }
