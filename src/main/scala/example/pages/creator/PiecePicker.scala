@@ -1,19 +1,19 @@
 package example.pages.creator
 
 import com.raquo.laminar.api.L._
+import dev.bluepitaya.laminardragging.Dragging
+import example.game.Vec2d
 import example.pages.creator.Models.PieceColor._
 import example.pages.creator.Models.PieceKind._
 import org.scalajs.dom
 
 import Models._
-import example.game.Vec2d
-import dev.bluepitaya.laminardragging.Dragging
 
 object PiecePicker {
   case class PieceToPick(piece: Piece, imgPath: String)
 
   sealed trait Event
-  case class PiecePicked(e: Dragging.Event) extends Event
+  case class PiecePicked(p: Piece, e: Dragging.Event) extends Event
 
   def component(
       observer: Observer[Event],
@@ -64,36 +64,29 @@ object PiecePicker {
       pieceToPick: PieceToPick,
       draggingModule: Dragging.DraggingModule[Piece],
       observer: Observer[Event]
-  ): Element = svg.svg(
-    svg.width("100"),
-    svg.height("100"),
-    svg.image(
-      svg.href(pieceToPick.imgPath),
-      svg.width("100"),
-      svg.height("100")
-    ),
+  ): Element = pieceImgElement(pieceToPick.piece).amend(
     draggingModule.componentBindings(pieceToPick.piece),
     draggingModule
       .componentEvents(pieceToPick.piece)
-      .map(e => PiecePicked(e)) --> observer
-    // onPointerDown
-    //  .map(toPosition)
-    //  .map(p => PieceDraggingStart(piece = pieceToPick.piece, position = p)) -->
-    //  observer
+      .map(e => PiecePicked(pieceToPick.piece, e)) --> observer
   )
+
+  val pieceImgWidthInPx = 100
+  val pieceImgHeightInPx = 100
+
+  def pieceImgElement(p: Models.Piece): Element = {
+    val imgPath = pieceImgPath(p)
+
+    svg.svg(
+      svg.cls(s"w-[${pieceImgWidthInPx}px] h-[${pieceImgHeightInPx}px]"),
+      svg.image(
+        svg.href(imgPath),
+        svg.width(pieceImgWidthInPx.toString()),
+        svg.height(pieceImgHeightInPx.toString())
+      )
+    )
+  }
 
   private def toPosition(e: dom.PointerEvent): Vec2d =
     Vec2d(e.pageX.toInt, e.pageY.toInt)
-
-  // private def getRelativePosition(
-  //    e: dom.MouseEvent,
-  //    container: dom.Element
-  // ): Vec2d = {
-  //  val rect = container.getBoundingClientRect()
-  //  val x = e.pageX - (rect.x + dom.window.pageXOffset)
-  //  val y = e.pageY - (rect.y + dom.window.pageYOffset)
-
-  //  Vec2d(x.toInt, y.toInt)
-  // }
-
 }

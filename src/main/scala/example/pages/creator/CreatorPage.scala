@@ -15,6 +15,7 @@ object CreatorPage {
       div("controls"),
       BoardContainer.component(state.boardState),
       PiecePicker.component(piecePickerObserver, draggingModule),
+      child <-- DraggingPieceContainer.componentSignal(state),
       draggingModule.documentBindings
     )
   }

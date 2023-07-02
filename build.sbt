@@ -30,3 +30,16 @@ lazy val root = (project in file("."))
       baseDirectory.value / "ui/sccode/"
   )
   .enablePlugins(ScalaJSPlugin)
+
+val http4sVersion = "0.23.22"
+
+lazy val api = (project in file("api")).settings(
+  scalacOptions := Seq("-Wunused:imports"),
+  name := "chessboard-api",
+  libraryDependencies ++=
+    Seq(
+      "org.http4s" %% "http4s-ember-client" % http4sVersion,
+      "org.http4s" %% "http4s-ember-server" % http4sVersion,
+      "org.http4s" %% "http4s-dsl" % http4sVersion
+    )
+)
