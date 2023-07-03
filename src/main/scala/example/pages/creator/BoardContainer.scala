@@ -1,75 +1,92 @@
 package example.pages.creator
 
 import com.raquo.laminar.api.L._
+import dev.bluepitaya.laminardragging.Vec2f
 import example.game.Vec2d
+import example.pages.creator.logic.BoardUiLogic
+import org.scalajs.dom
 
 object BoardContainer {
-  case class State(boardLogicSize: Vec2d, boardRealSize: Vec2d)
-  object State {
-    def empty = State(boardLogicSize = Vec2d.zero, boardRealSize = Vec2d.zero)
-  }
-
-  case class TileState(position: Vec2d, size: Int, hexColor: String)
-
-  def component(state: State): SvgElement = {
-    val tileStates = createTiles(state)
+  def component(
+      s: BoardUiLogic.State,
+      o: Observer[BoardUiLogic.Event]
+  ): Element = {
+    val tileSize = BoardUiLogic.getTileSize(s)
+    val tiles = s
+      .tiles
+      .signal
+      .split(_.pos) { case (pos, tile, tileSignal) =>
+        val canvasPos = BoardUiLogic.getTilePos(s, pos)
+        val bgColorSignal = tile
+          .isHovered
+          .signal
+          .map(isHovered => BoardUiLogic.tileHexColor(pos, isHovered))
+        tileComponent(canvasPos, tileSize, bgColorSignal)
+      }
+    val placedPieces = s
+      .placedPieces
+      .signal
+      .map(v => v.toList)
+      .split(_._1) { case (pos, (_, piece), _) =>
+        val canvasPos = BoardUiLogic.getTilePos(s, pos)
+        val imgPath = BoardUiLogic.pieceImgPath(piece)
+        placedPieceComponent(canvasPos, tileSize, imgPath)
+      }
 
     svg.svg(
       svg.cls("min-w-[800px] h-[800px] bg-stone-800"),
-      svg.g(tileStates.map(renderTile))
+      svg.g(children <-- tiles),
+      svg.g(children <-- placedPieces),
+      // TODO: remove?
+      inContext { ctx =>
+        onPointerMove.map(e =>
+          BoardUiLogic.PointerMove(getRelativePosition(e, ctx.ref))
+        ) --> o
+      },
+      onMountCallback { ctx =>
+        o.onNext(BoardUiLogic.ContainerChanged(ctx.thisNode.ref))
+      }
     )
   }
 
-  def renderTile(state: TileState): SvgElement = svg.rect(
-    svg.x(state.position.x.toString()),
-    svg.y(state.position.y.toString()),
-    svg.width(state.size.toString()),
-    svg.height(state.size.toString()),
-    svg.fill(state.hexColor)
-  )
-
-  def createTiles(state: State): List[TileState] = tileLogicPositions(
-    state.boardLogicSize
-  ).map(pos =>
-    TileState(
-      position = getTilePos(state, pos),
-      size = getTileSize(state),
-      hexColor = tileHexColor(pos)
+  def placedPieceComponent(
+      pos: Vec2d,
+      tileSize: Int,
+      pieceImgPath: String
+  ): Element = {
+    svg.image(
+      svg.x(pos.x.toString()),
+      svg.y(pos.y.toString()),
+      svg.width(tileSize.toString()),
+      svg.height(tileSize.toString()),
+      svg.href(pieceImgPath)
     )
-  )
-
-  def tileLogicPositions(boardLogicSize: Vec2d): List[Vec2d] =
-    (0.until(boardLogicSize.x))
-      .map(x => (0.until(boardLogicSize.y)).map(y => Vec2d(x, y)))
-      .flatten
-      .toList
-
-  def getTilePos(boardState: State, tileLogicPos: Vec2d): Vec2d = {
-    val tileSize = getTileSize(boardState)
-    val totalTilesWidth = boardState.boardLogicSize.x * tileSize
-    val totalTilesHeight = boardState.boardLogicSize.y * tileSize
-    val offsetX = (boardState.boardRealSize.x - totalTilesWidth) / 2
-    val offsetY = (boardState.boardRealSize.y - totalTilesHeight) / 2
-    val x = tileLogicPos.x * tileSize
-    val y =
-      (boardState.boardRealSize.y - tileSize) - (tileLogicPos.y * tileSize)
-
-    Vec2d(offsetX + x, y - offsetY)
   }
 
-  def getTileSize(boardState: State): Int = {
-    val maxSize = 100
-    val x = boardState.boardRealSize.x / boardState.boardLogicSize.x
-    val y = boardState.boardRealSize.y / boardState.boardLogicSize.y
+  /** Get dragging position relative to other element. */
+  def getRelativePosition(
+      e: dom.PointerEvent,
+      container: dom.Element
+  ): Vec2f = {
+    val event = e
+    val rect = container.getBoundingClientRect()
+    val x = event.pageX - (rect.x + dom.window.pageXOffset)
+    val y = event.pageY - (rect.y + dom.window.pageYOffset)
 
-    Math.min(Math.min(maxSize, x), Math.min(maxSize, y))
+    Vec2f(x, y)
   }
 
-  def tileHexColor(logicPos: Vec2d): String = {
-    val blackTileColor = "#b58863"
-    val whiteTileColor = "#f0d9b5"
-
-    if ((logicPos.x + logicPos.y) % 2 == 0) blackTileColor
-    else whiteTileColor
+  def tileComponent(
+      pos: Vec2d,
+      tileSize: Int,
+      bgColorSignal: Signal[String]
+  ): Element = {
+    svg.rect(
+      svg.x(pos.x.toString()),
+      svg.y(pos.y.toString()),
+      svg.width(tileSize.toString()),
+      svg.height(tileSize.toString()),
+      svg.fill <-- bgColorSignal
+    )
   }
 }

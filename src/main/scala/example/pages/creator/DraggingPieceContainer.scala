@@ -2,9 +2,10 @@ package example.pages.creator
 
 import com.raquo.laminar.api.L._
 import dev.bluepitaya.laminardragging.Vec2f
+import example.pages.creator.logic.BoardUiLogic
 
 object DraggingPieceContainer {
-  def componentSignal(state: State): Signal[Node] = {
+  def componentSignal(state: BoardUiLogic.State): Signal[Node] = {
     state
       .draggingPieceState
       .signal
@@ -30,6 +31,5 @@ object DraggingPieceContainer {
 
   private def toPx(v: Double): String = s"${v.toInt.toString()}px"
 
-  // TODO: move it to better place
-  def pieceImgPath(p: Models.Piece): String = PiecePicker.pieceImgPath(p)
+  def pieceImgPath(p: Models.Piece): String = BoardUiLogic.pieceImgPath(p)
 }
