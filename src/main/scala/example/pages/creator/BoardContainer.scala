@@ -5,32 +5,48 @@ import dev.bluepitaya.laminardragging.Vec2f
 import example.game.Vec2d
 import example.pages.creator.logic.BoardUiLogic
 import org.scalajs.dom
+import dev.bluepitaya.laminardragging.Dragging
+import example.pages.creator.logic.DraggingId
 
 object BoardContainer {
   def component(
       s: BoardUiLogic.State,
-      o: Observer[BoardUiLogic.Event]
+      o: Observer[BoardUiLogic.Event],
+      dm: Dragging.DraggingModule[DraggingId]
   ): Element = {
     val tileSize = BoardUiLogic.getTileSize(s)
     val tiles = s
       .tiles
       .signal
       .split(_.pos) { case (pos, tile, tileSignal) =>
-        val canvasPos = BoardUiLogic.getTilePos(s, pos)
+        val canvasPos = BoardUiLogic.tileCanvasPos(s, pos)
         val bgColorSignal = tile
           .isHovered
           .signal
           .map(isHovered => BoardUiLogic.tileHexColor(pos, isHovered))
+
         tileComponent(canvasPos, tileSize, bgColorSignal)
       }
     val placedPieces = s
-      .placedPieces
+      .piecesOnBoard
       .signal
       .map(v => v.toList)
-      .split(_._1) { case (pos, (_, piece), _) =>
-        val canvasPos = BoardUiLogic.getTilePos(s, pos)
-        val imgPath = BoardUiLogic.pieceImgPath(piece)
-        placedPieceComponent(canvasPos, tileSize, imgPath)
+      .map { v =>
+        v.map { case (pos, pob) =>
+          val canvasPos = BoardUiLogic.tileCanvasPos(s, pos)
+          val imgPath = BoardUiLogic.pieceImgPath(pob.piece)
+          val draggingId = DraggingId.PieceOnBoardId(pos, pob.piece)
+          val isVisibleSignal = pob.isVisible.signal
+
+          placedPieceComponent(canvasPos, tileSize, imgPath, isVisibleSignal)
+            .amend(
+              dm.componentBindings(draggingId),
+              dm.componentEvents(draggingId)
+                .map(e =>
+                  BoardUiLogic.PieceDragging(draggingId, pob.piece, e)
+                ) --> o
+            )
+        }
       }
 
     svg.svg(
@@ -52,14 +68,20 @@ object BoardContainer {
   def placedPieceComponent(
       pos: Vec2d,
       tileSize: Int,
-      pieceImgPath: String
+      pieceImgPath: String,
+      isVisibleSignal: Signal[Boolean]
   ): Element = {
     svg.image(
       svg.x(pos.x.toString()),
       svg.y(pos.y.toString()),
       svg.width(tileSize.toString()),
       svg.height(tileSize.toString()),
-      svg.href(pieceImgPath)
+      svg.href <--
+        isVisibleSignal.map {
+          case true => pieceImgPath
+          // TODO: quick hack
+          case false => ""
+        }
     )
   }
 

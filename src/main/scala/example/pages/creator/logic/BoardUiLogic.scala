@@ -9,11 +9,26 @@ import dev.bluepitaya.laminardragging.Vec2f
 import example.game.Vec2d
 import example.pages.creator.Models
 import org.scalajs.dom
+import example.pages.creator.logic.DraggingId.PieceOnBoardId
+import example.pages.creator.logic.DraggingId.PieceOnPicker
+
+sealed trait DraggingId
+object DraggingId {
+  // TODO: piece here is not needed!
+  case class PieceOnBoardId(fromPos: Vec2d, p: Models.Piece) extends DraggingId
+  case class PieceOnPicker(p: Models.Piece) extends DraggingId
+}
 
 object BoardUiLogic {
   case class DraggingPieceState(piece: Models.Piece, position: Vec2f)
 
   case class Tile(pos: Vec2d, isHovered: Var[Boolean])
+
+  case class PieceOnBoard(
+      anchorPos: Vec2d,
+      piece: Models.Piece,
+      isVisible: Var[Boolean]
+  )
 
   case class State(
       boardSize: Var[Vec2d],
@@ -22,7 +37,7 @@ object BoardUiLogic {
       tiles: Var[List[Tile]],
       containerRef: Var[Option[dom.Element]],
       draggingPieceState: Var[Option[DraggingPieceState]],
-      placedPieces: Var[Map[Vec2d, Models.Piece]]
+      piecesOnBoard: Var[Map[Vec2d, PieceOnBoard]]
   )
 
   object State {
@@ -33,26 +48,32 @@ object BoardUiLogic {
       tiles = Var(createTiles(boardSize)),
       containerRef = Var(None),
       draggingPieceState = Var(None),
-      placedPieces = Var(Map())
+      piecesOnBoard = Var(Map())
     )
   }
 
   sealed trait Event
   case class PointerMove(pos: Vec2f) extends Event
   case class ContainerChanged(el: dom.Element) extends Event
-  case class PieceDragging(p: Models.Piece, e: Dragging.Event) extends Event
+  // TODO: remve p
+  case class PieceDragging(id: DraggingId, p: Models.Piece, e: Dragging.Event)
+      extends Event
 
   def observer(s: State): Observer[Event] = Observer { e =>
     e match {
       case PointerMove(pos)     => () // onPointerMove(s, pos)
       case ContainerChanged(el) => s.containerRef.set(Some(el))
-      case e: PieceDragging =>
-        handleDraggingImage(s, e)
-        hanleDropLogic(s, e)
+      case e @ PieceDragging(id, piece, draggingEvent) =>
+        id match {
+          case id: PieceOnBoardId =>
+            handleBoardPieceDragging(s, draggingEvent, id)
+          case _: PieceOnPicker => hanlePickerPieceDragging(s, e)
+        }
+        handleDraggingImage(s, piece, draggingEvent)
     }
   }
 
-  def hanleDropLogic(s: State, pe: PieceDragging): Unit =
+  def hanlePickerPieceDragging(s: State, pe: PieceDragging): Unit =
     s.containerRef.now() match {
       case None => ()
       case Some(container) =>
@@ -61,19 +82,71 @@ object BoardUiLogic {
           case Start => ()
           case Move  => ()
           case End =>
-            val pos = tilePosition(s, relPos)
+            val pos = tileLogicPos(s, relPos)
             pos.foreach(pos => putPiece(s, pe.p, pos))
         }
     }
 
-  def putPiece(s: State, p: Models.Piece, pos: Vec2d): Unit = {
-    s.placedPieces.update(v => v.updated(pos, p))
+  def handleBoardPieceDragging(
+      s: State,
+      e: Dragging.Event,
+      id: DraggingId.PieceOnBoardId
+  ): Unit = e.kind match {
+    case Start => s
+        .piecesOnBoard
+        .now()
+        .get(id.fromPos)
+        .foreach { pob =>
+          pob.isVisible.set(false)
+        }
+    case Move => ()
+    case End => s.containerRef.now() match {
+        case None => ()
+        case Some(container) =>
+          val boardPos =
+            tileLogicPos(s, Dragging.getRelativePosition(e, container))
+          boardPos match {
+            case None => s
+                .piecesOnBoard
+                .now()
+                .get(id.fromPos)
+                .foreach { pob =>
+                  pob.isVisible.set(true)
+                }
+            case Some(pos) => s
+                .piecesOnBoard
+                .update(v =>
+                  v.removed(id.fromPos)
+                    .updated(
+                      pos,
+                      PieceOnBoard(
+                        anchorPos = pos,
+                        piece = id.p,
+                        isVisible = Var(true)
+                      )
+                    )
+                )
+          }
+
+      }
+
   }
 
-  def handleDraggingImage(s: State, e: PieceDragging): Unit = e.e.kind match {
+  def putPiece(s: State, p: Models.Piece, pos: Vec2d): Unit = {
+    val pieceOnBoard =
+      PieceOnBoard(anchorPos = pos, piece = p, isVisible = Var(true))
+
+    s.piecesOnBoard.update(v => v.updated(pos, pieceOnBoard))
+  }
+
+  def handleDraggingImage(
+      s: State,
+      piece: Models.Piece,
+      e: Dragging.Event
+  ): Unit = e.kind match {
     case Start | Move => s
         .draggingPieceState
-        .set(Some(DraggingPieceState(e.p, getPosition(e.e.e))))
+        .set(Some(DraggingPieceState(piece, getPosition(e.e))))
     case End => s.draggingPieceState.set(None)
   }
 
@@ -87,7 +160,7 @@ object BoardUiLogic {
 
   def onPointerMove(s: State, pos: Vec2f): Unit = {
     for {
-      tileLogicPos <- tilePosition(s, pos)
+      tileLogicPos <- tileLogicPos(s, pos)
       tile <- s.tiles.now().find(t => t.pos == tileLogicPos)
       _ = {
         tile.isHovered.set(true)
@@ -95,7 +168,7 @@ object BoardUiLogic {
     } yield ()
   }
 
-  def tilePosition(s: State, realPos: Vec2f): Option[Vec2d] = {
+  def tileLogicPos(s: State, realPos: Vec2f): Option[Vec2d] = {
     val boardOffset = toVec2f(getBoardOffset(s))
     val tileSize = getTileSize(s)
     val totalTileSize = toVec2f(totalTilesSize(s))
@@ -127,7 +200,7 @@ object BoardUiLogic {
       .flatten
       .toList
 
-  def getTilePos(s: State, tileLogicPos: Vec2d): Vec2d = {
+  def tileCanvasPos(s: State, tileLogicPos: Vec2d): Vec2d = {
     val tileSize = getTileSize(s)
     val boardOffset = getBoardOffset(s)
     val x = tileLogicPos.x * tileSize

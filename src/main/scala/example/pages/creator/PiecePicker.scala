@@ -8,13 +8,14 @@ import org.scalajs.dom
 
 import Models._
 import example.pages.creator.logic.BoardUiLogic
+import example.pages.creator.logic.DraggingId
 
 object PiecePicker {
   case class PieceToPick(piece: Piece, imgPath: String)
 
   def component(
       observer: Observer[BoardUiLogic.Event],
-      draggingModule: Dragging.DraggingModule[Piece]
+      draggingModule: Dragging.DraggingModule[DraggingId]
   ): Element = {
     val whitePieces = pieces(PieceColor.White).map(pieceToPick)
     val blackPieces = pieces(PieceColor.Black).map(pieceToPick)
@@ -42,13 +43,20 @@ object PiecePicker {
 
   def renderPieceToPick(
       pieceToPick: PieceToPick,
-      draggingModule: Dragging.DraggingModule[Piece],
+      draggingModule: Dragging.DraggingModule[DraggingId],
       observer: Observer[BoardUiLogic.Event]
   ): Element = pieceImgElement(pieceToPick.piece).amend(
-    draggingModule.componentBindings(pieceToPick.piece),
     draggingModule
-      .componentEvents(pieceToPick.piece)
-      .map(e => BoardUiLogic.PieceDragging(pieceToPick.piece, e)) --> observer
+      .componentBindings(DraggingId.PieceOnPicker(pieceToPick.piece)),
+    draggingModule
+      .componentEvents(DraggingId.PieceOnPicker(pieceToPick.piece))
+      .map(e =>
+        BoardUiLogic.PieceDragging(
+          DraggingId.PieceOnPicker(pieceToPick.piece),
+          pieceToPick.piece,
+          e
+        )
+      ) --> observer
   )
 
   val pieceImgWidthInPx = 100
