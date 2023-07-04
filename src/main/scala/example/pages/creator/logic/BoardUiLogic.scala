@@ -14,7 +14,6 @@ import org.scalajs.dom
 
 sealed trait DraggingId
 object DraggingId {
-  // TODO: piece here is not needed!
   case class PieceOnBoardId(fromPos: Vec2d, p: Models.Piece) extends DraggingId
   case class PieceOnPicker(p: Models.Piece) extends DraggingId
 }
@@ -53,7 +52,6 @@ object BoardUiLogic {
   case class ContainerChanged(el: dom.Element) extends Event
   case class BoardWidthCh(v: String) extends Event
   case class BoardHeightCh(v: String) extends Event
-  // TODO: remve p
   case class PieceDragging(id: DraggingId, p: Models.Piece, e: Dragging.Event)
       extends Event
 
@@ -89,9 +87,10 @@ object BoardUiLogic {
         pe.e.kind match {
           case Start => ()
           case Move  => ()
-          case End =>
-            val pos = tileLogicPos(s, relPos)
-            pos.foreach(pos => putPiece(s, pe.p, pos))
+          case End => for {
+              pos <- tileLogicPos(s, relPos)
+              _ = putPiece(s, pe.p, pos)
+            } yield ()
         }
     }
 
@@ -147,7 +146,7 @@ object BoardUiLogic {
     s.piecesOnBoard.update(v => v.updated(pos, pieceOnBoard))
   }
 
-  def handleDraggingImage(
+  private def handleDraggingImage(
       s: State,
       piece: Models.Piece,
       e: Dragging.Event
@@ -166,16 +165,16 @@ object BoardUiLogic {
       .flatten
       .toList
 
-  def tileLogicPos(s: State, realPos: Vec2f): Option[Vec2d] = {
-    val boardOffset = toVec2f(getBoardOffset(s))
-    val tileSize = getTileSize(s)
-    val totalTileSize = toVec2f(totalTilesSize(s))
-    val onBoardPos = (realPos - boardOffset)
-    val p = div(onBoardPos, tileSize)
+  private def tileLogicPos(s: State, realPos: Vec2f): Option[Vec2d] = {
     val boardSize = s.boardSize.now()
+    val canvasSize = s.canvasSize
+    val tileSize = getTileSize(boardSize, canvasSize)
+    val boardOffset = toVec2f(getBoardOffset(tileSize, boardSize, canvasSize))
+    val onBoardPos = (realPos - boardOffset)
+    val pos = div(onBoardPos, tileSize)
 
-    Option.when(isBetween(p, Vec2f.zero, toVec2f(boardSize)))(
-      invertYAxis(toVec2dRoundedDown(p), boardSize.y)
+    Option.when(isBetween(pos, Vec2f.zero, toVec2f(boardSize)))(
+      invertYAxis(toVec2dRoundedDown(pos), boardSize.y)
     )
   }
 
@@ -198,51 +197,22 @@ object BoardUiLogic {
       .flatten
       .toList
 
-  def tileCanvasPos(s: State, tileLogicPos: Vec2d): Vec2d = {
-    val tileSize = getTileSize(s)
-    val boardOffset = getBoardOffset(s)
-    val x = tileLogicPos.x * tileSize
-    val y = (s.canvasSize.y - tileSize) - (tileLogicPos.y * tileSize)
-
-    Vec2d(boardOffset.x + x, y - boardOffset.y)
-  }
-
-  def _tileCanvasPos(pos: Vec2d, boardSize: Vec2d, canvasSize: Vec2d): Vec2d = {
-    val tileSize = _getTileSize(boardSize, canvasSize)
-    val boardOffset = _getBoardOffset(tileSize, boardSize, canvasSize)
+  def tileCanvasPos(pos: Vec2d, boardSize: Vec2d, canvasSize: Vec2d): Vec2d = {
+    val tileSize = getTileSize(boardSize, canvasSize)
+    val boardOffset = getBoardOffset(tileSize, boardSize, canvasSize)
     val x = pos.x * tileSize
     val y = (canvasSize.y - tileSize) - (pos.y * tileSize)
 
     Vec2d(boardOffset.x + x, y - boardOffset.y)
   }
 
-  def getBoardOffset(s: State): Vec2d = {
-    val tileSize = getTileSize(s)
-
-    (s.canvasSize - totalTilesSize(s)) / 2
-  }
-
-  def _getBoardOffset(
+  def getBoardOffset(
       tileSize: Int,
       boardSize: Vec2d,
       canvasSize: Vec2d
   ): Vec2d = (canvasSize - (boardSize * tileSize)) / 2
 
-  def totalTilesSize(s: State): Vec2d = {
-    val tileSize = getTileSize(s)
-
-    s.boardSize.now() * tileSize
-  }
-
-  def getTileSize(boardState: State): Int = {
-    val maxSize = 100
-    val x = boardState.canvasSize.x / boardState.boardSize.now().x
-    val y = boardState.canvasSize.y / boardState.boardSize.now().y
-
-    Math.min(Math.min(maxSize, x), Math.min(maxSize, y))
-  }
-
-  def _getTileSize(boardSize: Vec2d, canvasSize: Vec2d): Int = {
+  def getTileSize(boardSize: Vec2d, canvasSize: Vec2d): Int = {
     val maxSize = 100
     val x = canvasSize.x / boardSize.x
     val y = canvasSize.y / boardSize.y

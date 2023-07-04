@@ -19,32 +19,32 @@ object BoardContainer {
     val tilesSignal = s
       .boardSize
       .signal
-      // TODO: clean
-      .map(bs => (bs, tilesPositionMatrix(bs)))
-      .map { case (bs, positions) =>
-        val tileSize = _getTileSize(bs, s.canvasSize)
-        positions.map { pos =>
-          val canvasPos = _tileCanvasPos(pos, bs, s.canvasSize)
+      .map { boardSize =>
+        val positionsMatrix = tilesPositionMatrix(boardSize)
+        val tileSize = getTileSize(boardSize, s.canvasSize)
+
+        positionsMatrix.map { pos =>
+          val canvasPos = tileCanvasPos(pos, boardSize, s.canvasSize)
           val bgColor = tileHexColor(pos)
 
           tileComponent(canvasPos, tileSize, bgColor)
         }
       }
 
-    // TODO: this is unsafe
     val placedPieces = s
       .piecesOnBoard
       .signal
       .map(v => v.toList)
       .combineWith(s.boardSize)
       .map { case (piecesOnBoard, boardSize) =>
-        val tileSize = _getTileSize(boardSize, s.canvasSize)
+        val tileSize = getTileSize(boardSize, s.canvasSize)
+
         piecesOnBoard
           .filter { case (pos, _) =>
             isPieceOnBoard(pos, boardSize)
           }
           .map { case (pos, pieceOnBoard) =>
-            val canvasPos = _tileCanvasPos(pos, boardSize, s.canvasSize)
+            val canvasPos = tileCanvasPos(pos, boardSize, s.canvasSize)
             val imgPath = pieceImgPath(pieceOnBoard.piece)
             val draggingId = DraggingId.PieceOnBoardId(pos, pieceOnBoard.piece)
             val isVisibleSignal = pieceOnBoard.isVisible.signal
