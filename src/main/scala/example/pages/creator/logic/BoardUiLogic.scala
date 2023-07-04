@@ -8,9 +8,9 @@ import dev.bluepitaya.laminardragging.Dragging
 import dev.bluepitaya.laminardragging.Vec2f
 import example.game.Vec2d
 import example.pages.creator.Models
-import org.scalajs.dom
 import example.pages.creator.logic.DraggingId.PieceOnBoardId
 import example.pages.creator.logic.DraggingId.PieceOnPicker
+import org.scalajs.dom
 
 sealed trait DraggingId
 object DraggingId {
@@ -22,8 +22,6 @@ object DraggingId {
 object BoardUiLogic {
   case class DraggingPieceState(piece: Models.Piece, position: Vec2f)
 
-  case class Tile(pos: Vec2d, isHovered: Var[Boolean])
-
   case class PieceOnBoard(
       anchorPos: Vec2d,
       piece: Models.Piece,
@@ -34,7 +32,6 @@ object BoardUiLogic {
       boardSize: Var[Vec2d],
       canvasSize: Vec2d,
       tileMaxSize: Int,
-      tiles: Var[List[Tile]],
       containerRef: Var[Option[dom.Element]],
       draggingPieceState: Var[Option[DraggingPieceState]],
       piecesOnBoard: Var[Map[Vec2d, PieceOnBoard]]
@@ -45,7 +42,6 @@ object BoardUiLogic {
       boardSize = Var(boardSize),
       canvasSize = Vec2d(800, 800),
       tileMaxSize = 100,
-      tiles = Var(createTiles(boardSize)),
       containerRef = Var(None),
       draggingPieceState = Var(None),
       piecesOnBoard = Var(Map())
@@ -55,6 +51,8 @@ object BoardUiLogic {
   sealed trait Event
   case class PointerMove(pos: Vec2f) extends Event
   case class ContainerChanged(el: dom.Element) extends Event
+  case class BoardWidthCh(v: String) extends Event
+  case class BoardHeightCh(v: String) extends Event
   // TODO: remve p
   case class PieceDragging(id: DraggingId, p: Models.Piece, e: Dragging.Event)
       extends Event
@@ -67,13 +65,23 @@ object BoardUiLogic {
         id match {
           case id: PieceOnBoardId =>
             handleBoardPieceDragging(s, draggingEvent, id)
-          case _: PieceOnPicker => hanlePickerPieceDragging(s, e)
+          case _: PieceOnPicker => handlePickerPieceDragging(s, e)
         }
         handleDraggingImage(s, piece, draggingEvent)
+      case BoardWidthCh(v) =>
+        val num = v.toIntOption
+        num.foreach { n =>
+          s.boardSize.update(size => Vec2d(n, size.y))
+        }
+      case BoardHeightCh(v) =>
+        val num = v.toIntOption
+        num.foreach { n =>
+          s.boardSize.update(size => Vec2d(size.x, n))
+        }
     }
   }
 
-  def hanlePickerPieceDragging(s: State, pe: PieceDragging): Unit =
+  def handlePickerPieceDragging(s: State, pe: PieceDragging): Unit =
     s.containerRef.now() match {
       case None => ()
       case Some(container) =>
@@ -152,21 +160,11 @@ object BoardUiLogic {
 
   private def getPosition(e: dom.PointerEvent): Vec2f = Vec2f(e.pageX, e.pageY)
 
-  def createTiles(boardSize: Vec2d): List[Tile] = (0.until(boardSize.x))
-    .map(x => (0.until(boardSize.y)).map(y => Vec2d(x, y)))
-    .flatten
-    .toList
-    .map(pos => Tile(pos = pos, isHovered = Var(false)))
-
-  def onPointerMove(s: State, pos: Vec2f): Unit = {
-    for {
-      tileLogicPos <- tileLogicPos(s, pos)
-      tile <- s.tiles.now().find(t => t.pos == tileLogicPos)
-      _ = {
-        tile.isHovered.set(true)
-      }
-    } yield ()
-  }
+  def tilesPositionMatrix(boardSize: Vec2d): List[Vec2d] =
+    (0.until(boardSize.x))
+      .map(x => (0.until(boardSize.y)).map(y => Vec2d(x, y)))
+      .flatten
+      .toList
 
   def tileLogicPos(s: State, realPos: Vec2f): Option[Vec2d] = {
     val boardOffset = toVec2f(getBoardOffset(s))
@@ -209,11 +207,26 @@ object BoardUiLogic {
     Vec2d(boardOffset.x + x, y - boardOffset.y)
   }
 
+  def _tileCanvasPos(pos: Vec2d, boardSize: Vec2d, canvasSize: Vec2d): Vec2d = {
+    val tileSize = _getTileSize(boardSize, canvasSize)
+    val boardOffset = _getBoardOffset(tileSize, boardSize, canvasSize)
+    val x = pos.x * tileSize
+    val y = (canvasSize.y - tileSize) - (pos.y * tileSize)
+
+    Vec2d(boardOffset.x + x, y - boardOffset.y)
+  }
+
   def getBoardOffset(s: State): Vec2d = {
     val tileSize = getTileSize(s)
 
     (s.canvasSize - totalTilesSize(s)) / 2
   }
+
+  def _getBoardOffset(
+      tileSize: Int,
+      boardSize: Vec2d,
+      canvasSize: Vec2d
+  ): Vec2d = (canvasSize - (boardSize * tileSize)) / 2
 
   def totalTilesSize(s: State): Vec2d = {
     val tileSize = getTileSize(s)
@@ -229,11 +242,18 @@ object BoardUiLogic {
     Math.min(Math.min(maxSize, x), Math.min(maxSize, y))
   }
 
-  def tileHexColor(logicPos: Vec2d, isHovered: Boolean): String = {
+  def _getTileSize(boardSize: Vec2d, canvasSize: Vec2d): Int = {
+    val maxSize = 100
+    val x = canvasSize.x / boardSize.x
+    val y = canvasSize.y / boardSize.y
+
+    Math.min(Math.min(maxSize, x), Math.min(maxSize, y))
+  }
+
+  def tileHexColor(logicPos: Vec2d): String = {
     val blackTileColor = "#b58863"
     val whiteTileColor = "#f0d9b5"
-    val hoveredColor = "#ff00ff"
-    // if (isHovered) hoveredColor
+
     if ((logicPos.x + logicPos.y) % 2 == 0) blackTileColor
     else whiteTileColor
   }
@@ -256,4 +276,10 @@ object BoardUiLogic {
 
     s"/pieces/${colorPart}-${piecePart}.png"
   }
+
+  def isPieceOnBoard(pos: Vec2d, boardSize: Vec2d): Boolean =
+    isBetween(pos, Vec2d.zero, boardSize)
+
+  private def isBetween(v: Vec2d, b1: Vec2d, b2: Vec2d): Boolean =
+    v.x >= b1.x && v.y >= b1.y && v.x < b2.x && v.y < b2.y
 }

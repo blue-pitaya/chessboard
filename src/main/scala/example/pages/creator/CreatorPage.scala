@@ -5,6 +5,7 @@ import dev.bluepitaya.laminardragging.Dragging
 import example.game.Vec2d
 import example.pages.creator.logic.BoardUiLogic
 import example.pages.creator.logic.DraggingId
+import example.pages.creator.components.BoardSettingsComponent
 
 object CreatorPage {
   def component(): HtmlElement = {
@@ -13,8 +14,8 @@ object CreatorPage {
     val boardUiObserver = BoardUiLogic.observer(boardState)
 
     div(
-      cls("flex flex-row gap-4 w-full h-full m-4"),
-      div("controls"),
+      cls("flex flex-row gap-4 m-4"),
+      BoardSettingsComponent.component(boardState, boardUiObserver),
       BoardContainer.component(boardState, boardUiObserver, dm),
       PiecePicker.component(boardUiObserver, dm),
       child <-- DraggingPieceContainer.componentSignal(boardState),

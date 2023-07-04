@@ -15,13 +15,11 @@ body,
 #app {
   font-family: Iosevka Web, Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #f0f0f0;
-  max-width: 1100px;
   display: flex;
   flex-direction: column;
-  margin: auto;
+  align-items: center;
 }
 
 .markContainer span {

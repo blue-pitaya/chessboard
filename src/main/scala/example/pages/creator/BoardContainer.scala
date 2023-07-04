@@ -1,57 +1,69 @@
 package example.pages.creator
 
 import com.raquo.laminar.api.L._
+import dev.bluepitaya.laminardragging.Dragging
 import dev.bluepitaya.laminardragging.Vec2f
 import example.game.Vec2d
 import example.pages.creator.logic.BoardUiLogic
-import org.scalajs.dom
-import dev.bluepitaya.laminardragging.Dragging
 import example.pages.creator.logic.DraggingId
+import org.scalajs.dom
 
 object BoardContainer {
+  import BoardUiLogic._
+
   def component(
-      s: BoardUiLogic.State,
-      o: Observer[BoardUiLogic.Event],
+      s: State,
+      o: Observer[Event],
       dm: Dragging.DraggingModule[DraggingId]
   ): Element = {
-    val tileSize = BoardUiLogic.getTileSize(s)
-    val tiles = s
-      .tiles
+    val tilesSignal = s
+      .boardSize
       .signal
-      .split(_.pos) { case (pos, tile, tileSignal) =>
-        val canvasPos = BoardUiLogic.tileCanvasPos(s, pos)
-        val bgColorSignal = tile
-          .isHovered
-          .signal
-          .map(isHovered => BoardUiLogic.tileHexColor(pos, isHovered))
+      // TODO: clean
+      .map(bs => (bs, tilesPositionMatrix(bs)))
+      .map { case (bs, positions) =>
+        val tileSize = _getTileSize(bs, s.canvasSize)
+        positions.map { pos =>
+          val canvasPos = _tileCanvasPos(pos, bs, s.canvasSize)
+          val bgColor = tileHexColor(pos)
 
-        tileComponent(canvasPos, tileSize, bgColorSignal)
+          tileComponent(canvasPos, tileSize, bgColor)
+        }
       }
+
+    // TODO: this is unsafe
     val placedPieces = s
       .piecesOnBoard
       .signal
       .map(v => v.toList)
-      .map { v =>
-        v.map { case (pos, pob) =>
-          val canvasPos = BoardUiLogic.tileCanvasPos(s, pos)
-          val imgPath = BoardUiLogic.pieceImgPath(pob.piece)
-          val draggingId = DraggingId.PieceOnBoardId(pos, pob.piece)
-          val isVisibleSignal = pob.isVisible.signal
+      .combineWith(s.boardSize)
+      .map { case (piecesOnBoard, boardSize) =>
+        val tileSize = _getTileSize(boardSize, s.canvasSize)
+        piecesOnBoard
+          .filter { case (pos, _) =>
+            isPieceOnBoard(pos, boardSize)
+          }
+          .map { case (pos, pieceOnBoard) =>
+            val canvasPos = _tileCanvasPos(pos, boardSize, s.canvasSize)
+            val imgPath = pieceImgPath(pieceOnBoard.piece)
+            val draggingId = DraggingId.PieceOnBoardId(pos, pieceOnBoard.piece)
+            val isVisibleSignal = pieceOnBoard.isVisible.signal
 
-          placedPieceComponent(canvasPos, tileSize, imgPath, isVisibleSignal)
-            .amend(
-              dm.componentBindings(draggingId),
-              dm.componentEvents(draggingId)
-                .map(e =>
-                  BoardUiLogic.PieceDragging(draggingId, pob.piece, e)
-                ) --> o
-            )
-        }
+            placedPieceComponent(canvasPos, tileSize, imgPath, isVisibleSignal)
+              .amend(
+                dm.componentBindings(draggingId),
+                dm.componentEvents(draggingId)
+                  .map(e =>
+                    BoardUiLogic
+                      .PieceDragging(draggingId, pieceOnBoard.piece, e)
+                  ) --> o
+              )
+          }
       }
 
     svg.svg(
       svg.cls("min-w-[800px] h-[800px] bg-stone-800"),
-      svg.g(children <-- tiles),
+      svg.g(children <-- tilesSignal),
       svg.g(children <-- placedPieces),
       // TODO: remove?
       inContext { ctx =>
@@ -98,17 +110,13 @@ object BoardContainer {
     Vec2f(x, y)
   }
 
-  def tileComponent(
-      pos: Vec2d,
-      tileSize: Int,
-      bgColorSignal: Signal[String]
-  ): Element = {
+  def tileComponent(pos: Vec2d, tileSize: Int, bgColor: String): Element = {
     svg.rect(
       svg.x(pos.x.toString()),
       svg.y(pos.y.toString()),
       svg.width(tileSize.toString()),
       svg.height(tileSize.toString()),
-      svg.fill <-- bgColorSignal
+      svg.fill(bgColor)
     )
   }
 }
