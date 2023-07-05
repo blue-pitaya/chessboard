@@ -45,7 +45,7 @@ object PiecePicker {
       pieceToPick: PieceToPick,
       draggingModule: Dragging.DraggingModule[DraggingId],
       observer: Observer[BoardUiLogic.Event]
-  ): Element = pieceImgElement(pieceToPick.piece).amend(
+  ): Element = pieceImgElement(pieceToPick.piece, 100).amend(
     draggingModule
       .componentBindings(DraggingId.PieceOnPicker(pieceToPick.piece)),
     draggingModule
@@ -59,10 +59,7 @@ object PiecePicker {
       ) --> observer
   )
 
-  val pieceImgWidthInPx = 100
-  val pieceImgHeightInPx = 100
-
-  def pieceImgElement(p: Models.Piece): Element = {
+  def pieceImgElement(p: Models.Piece, pieceSize: Int): Element = {
     val imgPath = BoardUiLogic.pieceImgPath(p)
 
     svg.svg(
@@ -70,8 +67,8 @@ object PiecePicker {
       svg.cls(s"w-[100px] h-[100px]"),
       svg.image(
         svg.href(imgPath),
-        svg.width(pieceImgWidthInPx.toString()),
-        svg.height(pieceImgHeightInPx.toString())
+        svg.width(pieceSize.toString()),
+        svg.height(pieceSize.toString())
       )
     )
   }

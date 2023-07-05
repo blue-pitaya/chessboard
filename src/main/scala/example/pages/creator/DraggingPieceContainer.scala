@@ -9,25 +9,25 @@ object DraggingPieceContainer {
     state
       .draggingPieceState
       .signal
-      .map {
-        case Some(dpState) =>
-          val _centerPos = centerPos(
-            dpState.position,
-            PiecePicker.pieceImgWidthInPx,
-            PiecePicker.pieceImgHeightInPx
-          )
-          div(
-            position.fixed,
-            left(toPx(_centerPos.x)),
-            top(toPx(_centerPos.y)),
-            PiecePicker.pieceImgElement(dpState.piece)
-          )
-        case None => emptyNode
+      .withCurrentValueOf(state.boardSize)
+      .map { case (dpStateOpt, boardSize) =>
+        dpStateOpt match {
+          case Some(dpState) =>
+            val size = BoardUiLogic.getTileSize(boardSize, state.canvasSize)
+            val _centerPos = centerPos(dpState.position, size)
+            div(
+              position.fixed,
+              left(toPx(_centerPos.x)),
+              top(toPx(_centerPos.y)),
+              PiecePicker.pieceImgElement(dpState.piece, size)
+            )
+          case None => emptyNode
+        }
       }
   }
 
-  private def centerPos(v: Vec2f, w: Double, h: Double): Vec2f =
-    Vec2f(v.x - (w / 2), v.y - (h / 2))
+  private def centerPos(v: Vec2f, size: Int): Vec2f =
+    Vec2f(v.x - (size / 2), v.y - (size / 2))
 
   private def toPx(v: Double): String = s"${v.toInt.toString()}px"
 
