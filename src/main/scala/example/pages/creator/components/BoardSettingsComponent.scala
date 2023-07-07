@@ -3,6 +3,7 @@ package example.pages.creator.components
 import com.raquo.laminar.api.L._
 import example.pages.creator.logic.BoardUiLogic
 import example.pages.creator.logic.SignalProvider
+import example.exp.ExBoardForm
 
 object BoardSettingsComponent {
   import Styles._
@@ -16,6 +17,7 @@ object BoardSettingsComponent {
     div(
       cls("w-[200px] flex flex-col bg-stone-800 p-3"),
       cls(bgColor),
+      ExBoardForm.inputEl,
       "Board width",
       input(
         cls("text-gray-900"),
