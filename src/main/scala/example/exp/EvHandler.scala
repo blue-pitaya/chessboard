@@ -13,11 +13,13 @@ object EvHandler {
     e match {
       case e @ PickerPieceDragging(draggingEvent, piece, color) =>
         draggingEvent.kind match {
-          case Start => onStart(e)
-          case Move  => IO.unit
-          case End   => IO.println("end")
+          case Start => onStart(s, e)
+          case Move  => onStart(s, e)
+          case End   => onEnd(s)
         }
-      case BoardContainerRefChanged(v) => IO.unit
+      case BoardContainerRefChanged(v) => IO {
+          s.containerRef.set(Some(v))
+        }
       case BoardWidthChanged(v) => IO {
           s.boardSize.update(size => Vec2d(v, size.y))
         }
@@ -27,9 +29,17 @@ object EvHandler {
     }
   }
 
-  def onStart(e: PickerPieceDragging): IO[Unit] = {
-    val imgPath = ExApp.pieceImgPath(e.color, e.piece)
-
-    IO.println("todo")
+  def onEnd(state: State): IO[Unit] = IO {
+    state.draggingPieceState.set(None)
   }
+
+  def onStart(state: State, e: PickerPieceDragging): IO[Unit] = {
+    val imgPath = ExApp.pieceImgPath(e.color, e.piece)
+    IO(
+      state
+        .draggingPieceState
+        .set(Some(DraggingPieceState(imgPath = imgPath, draggingEvent = e.e)))
+    )
+  }
+
 }

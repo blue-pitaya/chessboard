@@ -20,20 +20,22 @@ object ExAppModel {
 
   case class PieceDraggingId(piece: Fig, color: FigColor)
 
-  case class DraggingPieceState(imgPath: String, position: Vec2d)
+  case class DraggingPieceState(imgPath: String, draggingEvent: Dragging.Event)
 
   case class State(
       dm: Dragging.DraggingModule[PieceDraggingId],
       draggingPieceState: Var[Option[DraggingPieceState]],
       containerRef: Var[Option[dom.Element]],
-      boardSize: Var[Vec2d]
+      boardSize: Var[Vec2d],
+      canvasSize: Vec2d
   )
   object State {
     def init = State(
       dm = Dragging.createModule[ExAppModel.PieceDraggingId](),
       draggingPieceState = Var(None),
       containerRef = Var(None),
-      boardSize = Var(Vec2d(6, 6))
+      boardSize = Var(Vec2d(6, 6)),
+      canvasSize = Vec2d(800, 800)
     )
   }
 

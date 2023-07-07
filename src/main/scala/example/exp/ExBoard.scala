@@ -10,7 +10,7 @@ object ExBoard {
   import ExAppModel._
 
   def component(state: State, handler: Ev => IO[Unit]): Element = {
-    val canvasSize = Vec2d(800, 800)
+    val canvasSize = state.canvasSize
 
     val _tileSize = (boardSize: Vec2d) => tileSize(boardSize, canvasSize)
     val _tileCanvasPos = (boardSize: Vec2d) =>
