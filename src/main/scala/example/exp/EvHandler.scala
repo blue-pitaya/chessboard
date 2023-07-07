@@ -4,6 +4,7 @@ import cats.effect.IO
 import dev.bluepitaya.laminardragging.DragEventKind.End
 import dev.bluepitaya.laminardragging.DragEventKind.Move
 import dev.bluepitaya.laminardragging.DragEventKind.Start
+import example.game.Vec2d
 
 object EvHandler {
   import ExAppModel._
@@ -17,8 +18,12 @@ object EvHandler {
           case End   => IO.println("end")
         }
       case BoardContainerRefChanged(v) => IO.unit
-      case BoardWidthChanged(v)        => IO.unit
-      case BoardHeightChanged(v)       => IO.unit
+      case BoardWidthChanged(v) => IO {
+          s.boardSize.update(size => Vec2d(v, size.y))
+        }
+      case BoardHeightChanged(v) => IO {
+          s.boardSize.update(size => Vec2d(size.x, v))
+        }
     }
   }
 
