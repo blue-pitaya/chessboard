@@ -2,14 +2,14 @@ package example.pages.creator
 
 import com.raquo.laminar.api.L._
 import dev.bluepitaya.laminardragging.Dragging
+import example.exp.EvHandler
+import example.exp.ExApp
+import example.exp.ExAppModel
+import example.exp.ExBoard
+import example.exp.ExBoardForm
 import example.game.Vec2d
 import example.pages.creator.logic.BoardUiLogic
 import example.pages.creator.logic.DraggingId
-import example.pages.creator.components.BoardSettingsComponent
-import example.exp.ExApp
-import example.exp.ExAppModel
-import example.exp.EvHandler
-import example.exp.ExBoard
 
 object CreatorPage {
   def component(): HtmlElement = {
@@ -24,7 +24,8 @@ object CreatorPage {
 
     div(
       cls("flex flex-row gap-4 m-4"),
-      BoardSettingsComponent.component(boardState, boardUiObserver),
+      ExBoardForm.component(state, handler),
+      // BoardSettingsComponent.component(boardState, boardUiObserver),
       // BoardContainer.component(boardState, boardUiObserver, dm),
       ExBoard.component(state, handler),
       ExApp.component(state, handler),

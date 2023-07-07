@@ -2,10 +2,41 @@ package example.exp
 
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.codecs.StringAsIsCodec
+import cats.effect.IO
 
 object ExBoardForm {
+  import ExAppModel._
 
-  def inputEl = {
+  def component(state: State, handler: Ev => IO[Unit]): Element = {
+    val widthSignal = state.boardSize.signal.map(_.x.toString())
+    val heightSignal = state.boardSize.signal.map(_.y.toString())
+
+    div(
+      cls("w-[200px] flex flex-col bg-stone-800 p-3"),
+      "Board width",
+      input(
+        cls("text-gray-900"),
+        typ("number"),
+        controlled(
+          value <-- widthSignal,
+          onInput.mapToValue.map(v => BoardWidthChanged(v.toInt)) -->
+            ExApp.catsRunObserver(handler)
+        )
+      ),
+      p("Board height"),
+      input(
+        cls("text-gray-900"),
+        typ("number"),
+        controlled(
+          value <-- heightSignal,
+          onInput.mapToValue.map(v => BoardHeightChanged(v.toInt)) -->
+            ExApp.catsRunObserver(handler)
+        )
+      )
+    )
+  }
+
+  private def inputEl = {
     val v = Var("")
 
     div(

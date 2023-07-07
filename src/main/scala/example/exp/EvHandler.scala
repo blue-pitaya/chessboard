@@ -17,6 +17,8 @@ object EvHandler {
           case End   => IO.println("end")
         }
       case BoardContainerRefChanged(v) => IO.unit
+      case BoardWidthChanged(v)        => IO.unit
+      case BoardHeightChanged(v)       => IO.unit
     }
   }
 

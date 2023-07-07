@@ -41,4 +41,6 @@ object ExAppModel {
   case class PickerPieceDragging(e: Dragging.Event, piece: Fig, color: FigColor)
       extends Ev
   case class BoardContainerRefChanged(v: dom.Element) extends Ev
+  case class BoardWidthChanged(v: Int) extends Ev
+  case class BoardHeightChanged(v: Int) extends Ev
 }

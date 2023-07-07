@@ -19,15 +19,14 @@ lazy val root = (project in file("."))
     libraryDependencies += "dev.bluepitaya" %%% "laminar-dragging" % "1.0",
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.ESModule)
-        .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("sccode")))
-      // .withOutputPatterns(OutputPatterns.fromJSFile("%s.js"))
-      // .withESFeatures(_.withESVersion(ESVersion.ES2021))
+        .withOutputPatterns(OutputPatterns.fromJSFile("%s.js"))
+        .withESFeatures(_.withESVersion(ESVersion.ES2021))
     },
-    scalaJSUseMainModuleInitializer := true
-    // Compile / fastLinkJS / scalaJSLinkerOutputDirectory :=
-    //  baseDirectory.value / "ui/",
-    // Compile / fullLinkJS / scalaJSLinkerOutputDirectory :=
-    //  baseDirectory.value / "ui/"
+    scalaJSUseMainModuleInitializer := true,
+    Compile / fastLinkJS / scalaJSLinkerOutputDirectory :=
+      baseDirectory.value / "ui/sccode/",
+    Compile / fullLinkJS / scalaJSLinkerOutputDirectory :=
+      baseDirectory.value / "ui/sccode/"
   )
   .enablePlugins(ScalaJSPlugin)
 
