@@ -27,7 +27,8 @@ object ExAppModel {
       draggingPieceState: Var[Option[DraggingPieceState]],
       containerRef: Var[Option[dom.Element]],
       boardSize: Var[Vec2d],
-      canvasSize: Vec2d
+      canvasSize: Vec2d,
+      placedPieces: Var[Map[Vec2d, (FigColor, Fig)]]
   )
   object State {
     def init = State(
@@ -35,7 +36,8 @@ object ExAppModel {
       draggingPieceState = Var(None),
       containerRef = Var(None),
       boardSize = Var(Vec2d(6, 6)),
-      canvasSize = Vec2d(800, 800)
+      canvasSize = Vec2d(800, 800),
+      placedPieces = Var(Map())
     )
   }
 

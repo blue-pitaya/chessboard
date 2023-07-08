@@ -9,28 +9,95 @@ import example.game.Vec2d
 object ExBoard {
   import ExAppModel._
 
+  type BoardSize = Vec2d
+  type BoardPos = Vec2d
+
   def component(state: State, handler: Ev => IO[Unit]): Element = {
     val canvasSize = state.canvasSize
 
-    val _tileSize = (boardSize: Vec2d) => tileSize(boardSize, canvasSize)
-    val _tileCanvasPos = (boardSize: Vec2d) =>
-      (pos: Vec2d) => tileCanvasPos(canvasSize, boardSize)(pos)
-    val _tileComponent = (boardSize: Vec2d) =>
-      (pos: Vec2d) => {
+    val _tileSize = (bs: BoardSize) => tileSize(bs, canvasSize)
+    val _tileCanvasPos =
+      (bs: BoardSize) => (pos: BoardPos) => tileCanvasPos(canvasSize, bs, pos)
+    val _tileComponent = (boardSize: BoardSize) =>
+      (pos: BoardPos) => {
         val tileSize = _tileSize(boardSize)
         tileComponent(_tileCanvasPos(boardSize), tileSize, pos)
       }
     val _tileComponents =
-      (boardSize: Vec2d) => tileComponents(_tileComponent(boardSize), boardSize)
+      (bs: BoardSize) => tileComponents(_tileComponent(bs), bs)
     val _tilesSignal = tilesSignal(_tileComponents, state.boardSize.signal)
+
+    val _placedPiecesSignal = placedPiecesSignal(
+      state.boardSize.signal,
+      state.placedPieces.signal,
+      _tileSize,
+      _tileCanvasPos
+    )
 
     svg.svg(
       // TODO: should take canvasSize, but there is no styleProp for svg
       // and interpolation string for tailwind cls is broken
       svg.cls("min-w-[800px] h-[800px] bg-stone-800"),
       svg.g(children <-- _tilesSignal),
-      // svg.g(children <-- placedPieces),
+      svg.g(children <-- _placedPiecesSignal),
       onMountCallback(ctx => omc(ctx, handler))
+    )
+  }
+
+  def placedPiecesSignal(
+      boardSizeSignal: Signal[Vec2d],
+      placedPiecesSignal: Signal[Map[Vec2d, (FigColor, Fig)]],
+      tileSize: BoardSize => Int,
+      canvasPos: BoardSize => BoardPos => Vec2d
+  ): Signal[List[Element]] = {
+    placedPiecesSignal
+      .combineWith(boardSizeSignal)
+      .map { case (placedPieces, boardSize) =>
+        val _tileSize = tileSize(boardSize)
+        val pieces = placedPiecesOnBoard(placedPieces, boardSize)
+        pieces.map { case (pos, color, piece) =>
+          val _canvasPos = canvasPos(boardSize)(pos)
+          val imgPath = ExApp.pieceImgPath(color, piece)
+          placedPieceComponent(_canvasPos, _tileSize, imgPath, Val(true))
+        }
+      }
+  }
+
+  def placedPiecesOnBoard(
+      placedPieces: Map[Vec2d, (FigColor, Fig)],
+      boardSize: Vec2d
+  ): List[(Vec2d, FigColor, Fig)] = {
+    placedPieces
+      .toList
+      .collect {
+        case (pos, (color, piece)) if isPosOnBoard(pos, boardSize) =>
+          (pos, color, piece)
+      }
+  }
+
+  def isPosOnBoard(pos: Vec2d, boardSize: Vec2d): Boolean =
+    isBetween(pos, Vec2d.zero, boardSize)
+
+  def isBetween(v: Vec2d, b1: Vec2d, b2: Vec2d): Boolean = v.x >= b1.x &&
+    v.y >= b1.y && v.x < b2.x && v.y < b2.y
+
+  def placedPieceComponent(
+      pos: Vec2d,
+      tileSize: Int,
+      pieceImgPath: String,
+      isVisibleSignal: Signal[Boolean]
+  ): Element = {
+    svg.image(
+      svg.x(pos.x.toString()),
+      svg.y(pos.y.toString()),
+      svg.width(tileSize.toString()),
+      svg.height(tileSize.toString()),
+      svg.href <--
+        isVisibleSignal.map {
+          case true => pieceImgPath
+          // TODO: quick hack
+          case false => ""
+        }
     )
   }
 
@@ -74,7 +141,7 @@ object ExBoard {
     )
   }
 
-  def tileCanvasPos(canvasSize: Vec2d, boardSize: Vec2d)(pos: Vec2d): Vec2d = {
+  def tileCanvasPos(canvasSize: Vec2d, boardSize: Vec2d, pos: Vec2d): Vec2d = {
     val _tileSize = tileSize(boardSize, canvasSize)
     val _boardOffset = boardOffset(_tileSize, boardSize, canvasSize)
     val x = pos.x * _tileSize
