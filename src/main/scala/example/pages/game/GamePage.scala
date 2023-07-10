@@ -1,9 +1,8 @@
-package example.pages
+package example.pages.game
 
 import com.raquo.laminar.api.L._
-import example.components.Board
 
-object ChessboardPage {
+object GamePage {
   private val headerText = """
     |Simple chessborad, with implementes chess rules (without turn restrictions).
     |Todo: promoting pawn, rewriting code to Cats Effect, some fancy featureas

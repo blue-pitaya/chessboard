@@ -1,4 +1,4 @@
-package example.components
+package example.pages.game
 
 import com.raquo.laminar.api.L._
 import example.game.GameState

@@ -1,8 +1,8 @@
-package example.components
+package example.pages.game
 
 import com.raquo.laminar.api.L._
 import example.Utils
-import example.components.Tiles
+import example.pages.game.Tiles
 import example.game.GameState
 import chessboardcore.Vec2d
 
