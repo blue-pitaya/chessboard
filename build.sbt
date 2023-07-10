@@ -7,21 +7,17 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / organization := "com.example"
 ThisBuild / organizationName := "example"
 
+val Http4sVersion = "0.23.20"
+val CirceVersion = "0.14.5"
+val MunitVersion = "0.7.29"
+val LogbackVersion = "1.4.8"
+val MunitCatsEffectVersion = "1.0.7"
+
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .withoutSuffixFor(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("core"))
-  .settings(
-    name :=
-      "chessboard-core"
-      // libraryDependencies += "io.circe" %%% "circe-core" % circeVersion,
-      // libraryDependencies += "io.circe" %%% "circe-generic" % circeVersion,
-      // libraryDependencies += "io.circe" %%% "circe-parser" % circeVersion,
-      // libraryDependencies += "io.bullet" %%% "spliff" % "0.7.1",
-      // libraryDependencies += "com.softwaremill.common" %%% "tagging" % "2.3.4",
-      // libraryDependencies += "com.softwaremill.sttp.client3" %%% "cats" % "3.8.2",
-      // libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.13" % Test
-  )
+  .settings(name := "chessboard-core")
   .jsSettings(
     scalaJSLinkerConfig ~=
       (_.withModuleKind(ModuleKind.ESModule)
@@ -54,8 +50,6 @@ lazy val root = (project in file("."))
   )
   .enablePlugins(ScalaJSPlugin)
 
-val http4sVersion = "0.23.22"
-
 lazy val api = (project in file("api"))
   .dependsOn(core.jvm)
   .settings(
@@ -63,8 +57,15 @@ lazy val api = (project in file("api"))
     name := "chessboard-api",
     libraryDependencies ++=
       Seq(
-        "org.http4s" %% "http4s-ember-client" % http4sVersion,
-        "org.http4s" %% "http4s-ember-server" % http4sVersion,
-        "org.http4s" %% "http4s-dsl" % http4sVersion
+        "org.http4s" %% "http4s-ember-server" % Http4sVersion,
+        "org.http4s" %% "http4s-ember-client" % Http4sVersion,
+        "org.http4s" %% "http4s-dsl" % Http4sVersion,
+        "org.http4s" %% "http4s-circe" % Http4sVersion,
+        "io.circe" %% "circe-generic" % CirceVersion,
+        "org.scalameta" %% "munit" % MunitVersion % Test,
+        "org.typelevel" %% "munit-cats-effect-3" % MunitCatsEffectVersion %
+          Test,
+        "ch.qos.logback" % "logback-classic" % LogbackVersion % Runtime
+        // "org.scalameta" %% "svm-subs" % "20.2.0"
       )
   )

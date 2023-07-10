@@ -12,4 +12,8 @@ object Model {
   sealed trait FigColor
   case object White extends FigColor
   case object Black extends FigColor
+
+  case class Piece(color: FigColor, kind: Fig)
+
+  case class PlacedPiece(pos: Vec2d, piece: Piece)
 }
