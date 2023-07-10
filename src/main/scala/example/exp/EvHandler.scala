@@ -22,7 +22,7 @@ object EvHandler {
           case End   => onEnd(state, e)
         }
       case BoardContainerRefChanged(v) => IO {
-          state.containerRef.set(Some(v))
+          state.boardContainerRef.set(Some(v))
         }
       case BoardWidthChanged(v) => IO {
           state.boardSize.update(size => Vec2d(v, size.y))
@@ -31,6 +31,8 @@ object EvHandler {
           state.boardSize.update(size => Vec2d(size.x, v))
         }
       case e: PlacedPieceDragging => handlePlacedPieceDragging(state, e)
+      case RemoveZoneRefChanged(v) =>
+        IO(state.removeZoneComponentRef.set(Some(v)))
     }
   }
 
@@ -82,7 +84,21 @@ object EvHandler {
           movePlacedPiece(state, event.fromPos, tilePos, piece)
         case None => IO.unit
       }
+      _isOverRemoveZone <- isOverRemoveZone(state, event.e)
+      _ <-
+        if (_isOverRemoveZone) removePiece(event.fromPos, state)
+        else IO.unit
     } yield ()
+  }
+
+  def isOverRemoveZone(state: State, event: Dragging.Event): IO[Boolean] = {
+    (
+      for {
+        componentRef <- OptionT(IO(state.removeZoneComponentRef.now()))
+        result <- OptionT
+          .some[IO](isPointerInsideElement(event.e, componentRef))
+      } yield (result)
+    ).getOrElse(false)
   }
 
   def movePlacedPiece(
@@ -106,7 +122,7 @@ object EvHandler {
 
   def tileLogicPos(state: State, e: Dragging.Event): OptionT[IO, Vec2d] = for {
     boardSize <- OptionT.liftF(IO(state.boardSize.now()))
-    containerRef <- OptionT(IO(state.containerRef.now()))
+    containerRef <- OptionT(IO(state.boardContainerRef.now()))
     canvasPos = getRelativePosition(e.e, containerRef)
     canvasSize = state.canvasSize
     tilePos <- OptionT
@@ -169,6 +185,17 @@ object EvHandler {
     val y = e.pageY - (rect.y + dom.window.pageYOffset)
 
     Vec2d(x.toInt, y.toInt)
+  }
+
+  def isPointerInsideElement(
+      e: dom.PointerEvent,
+      container: dom.Element
+  ): Boolean = {
+    val rect = container.getBoundingClientRect()
+    val x = e.pageX - (rect.x + dom.window.pageXOffset)
+    val y = e.pageY - (rect.y + dom.window.pageYOffset)
+
+    (x >= 0) && (y >= 0) && (x < rect.width) && (y < rect.height)
   }
 
   def onStart(state: State, e: PickerPieceDragging): IO[Unit] = {

@@ -32,19 +32,21 @@ object ExAppModel {
   case class State(
       dm: Dragging.DraggingModule[PieceDraggingId],
       draggingPieceState: Var[Option[DraggingPieceState]],
-      containerRef: Var[Option[dom.Element]],
+      boardContainerRef: Var[Option[dom.Element]],
       boardSize: Var[Vec2d],
       canvasSize: Vec2d,
-      placedPieces: Var[PlacedPieces]
+      placedPieces: Var[PlacedPieces],
+      removeZoneComponentRef: Var[Option[dom.Element]]
   )
   object State {
     def init = State(
       dm = Dragging.createModule[ExAppModel.PieceDraggingId](),
       draggingPieceState = Var(None),
-      containerRef = Var(None),
+      boardContainerRef = Var(None),
       boardSize = Var(Vec2d(6, 6)),
       canvasSize = Vec2d(800, 800),
-      placedPieces = Var(Map())
+      placedPieces = Var(Map()),
+      removeZoneComponentRef = Var(None)
     )
   }
 
@@ -55,4 +57,5 @@ object ExAppModel {
   case class BoardWidthChanged(v: Int) extends Ev
   case class BoardHeightChanged(v: Int) extends Ev
   case class PlacedPieceDragging(e: Dragging.Event, fromPos: Vec2d) extends Ev
+  case class RemoveZoneRefChanged(v: dom.Element) extends Ev
 }

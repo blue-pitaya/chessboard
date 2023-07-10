@@ -7,6 +7,8 @@ import dev.bluepitaya.laminardragging.Dragging
 import example.game.Vec2d
 import org.scalajs.dom
 
+//TODO: bg-stone-800 should be dried
+
 object ExApp {
   import ExAppModel._
   type DM[A] = Dragging.DraggingModule[A]
@@ -20,7 +22,6 @@ object ExApp {
       (c: FigColor) => piecesContainer(c, pieces, _pieceComponent)
 
     div(
-      width("200px"),
       cls("flex flex-row bg-stone-800"),
       piecesContainerByColor(White),
       piecesContainerByColor(Black)

@@ -44,7 +44,7 @@ object ExBoard {
       svg.cls("min-w-[800px] h-[800px] bg-stone-800"),
       svg.g(children <-- _tilesSignal),
       svg.g(children <-- _placedPiecesSignal),
-      onMountCallback(ctx => omc(ctx, handler))
+      onMountCallback(onMountCallBkEffect(_, handler))
     )
   }
 
@@ -192,9 +192,10 @@ object ExBoard {
     else whiteTileColor
   }
 
-  // TODO: change name
-  def omc(ctx: MountContext[Element], handler: Ev => IO[Unit]): Unit =
-    catsRun(handler)(BoardContainerRefChanged(ctx.thisNode.ref))
+  def onMountCallBkEffect(
+      ctx: MountContext[Element],
+      handler: Ev => IO[Unit]
+  ): Unit = catsRun(handler)(BoardContainerRefChanged(ctx.thisNode.ref))
 
   def catsRun[A](f: A => IO[Unit]): A => Unit = { e =>
     f(e).unsafeRunAsync { cb =>

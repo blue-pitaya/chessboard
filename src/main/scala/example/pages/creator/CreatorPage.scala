@@ -7,6 +7,7 @@ import example.exp.ExAppModel
 import example.exp.ExBoard
 import example.exp.ExBoardForm
 import example.exp.ExDraggingPiece
+import example.exp.ExDeleteZone
 
 object CreatorPage {
   def component(): HtmlElement = {
@@ -17,7 +18,11 @@ object CreatorPage {
       cls("flex flex-row gap-4 m-4"),
       ExBoardForm.component(state, handler),
       ExBoard.component(state, handler),
-      ExApp.component(state, handler),
+      div(
+        cls("flex flex-col w-[200px] justify-between"),
+        ExApp.component(state, handler),
+        ExDeleteZone.component(state, handler)
+      ),
       child <-- ExDraggingPiece.componentSignal(state, handler),
       state.dm.documentBindings
     )
