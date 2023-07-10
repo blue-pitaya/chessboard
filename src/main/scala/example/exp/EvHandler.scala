@@ -1,47 +1,123 @@
 package example.exp
 
+import cats.data.OptionT
 import cats.effect.IO
+import com.raquo.laminar.api.L._
 import dev.bluepitaya.laminardragging.DragEventKind.End
 import dev.bluepitaya.laminardragging.DragEventKind.Move
 import dev.bluepitaya.laminardragging.DragEventKind.Start
+import dev.bluepitaya.laminardragging.Dragging
+import dev.bluepitaya.laminardragging.Vec2f
 import example.game.Vec2d
 import org.scalajs.dom
-import dev.bluepitaya.laminardragging.Vec2f
-import cats.data.OptionT
 
 object EvHandler {
   import ExAppModel._
 
-  def handle(s: State, e: Ev): IO[Unit] = {
-    e match {
-      case e @ PickerPieceDragging(draggingEvent, piece, color) =>
-        draggingEvent.kind match {
-          case Start => onStart(s, e)
-          case Move  => onStart(s, e)
-          case End   => onEnd(s, e)
+  def handle(state: State, event: Ev): IO[Unit] = {
+    event match {
+      case e: PickerPieceDragging => e.e.kind match {
+          case Start => onStart(state, e)
+          case Move  => onStart(state, e)
+          case End   => onEnd(state, e)
         }
       case BoardContainerRefChanged(v) => IO {
-          s.containerRef.set(Some(v))
+          state.containerRef.set(Some(v))
         }
       case BoardWidthChanged(v) => IO {
-          s.boardSize.update(size => Vec2d(v, size.y))
+          state.boardSize.update(size => Vec2d(v, size.y))
         }
       case BoardHeightChanged(v) => IO {
-          s.boardSize.update(size => Vec2d(size.x, v))
+          state.boardSize.update(size => Vec2d(size.x, v))
         }
+      case e: PlacedPieceDragging => handlePlacedPieceDragging(state, e)
     }
   }
+
+  def handlePlacedPieceDragging(
+      state: State,
+      event: PlacedPieceDragging
+  ): IO[Unit] = {
+    for {
+      pieceOpt <- placedPieceOnPos(event.fromPos, state).value
+      _ <- pieceOpt match {
+        case None        => IO.unit
+        case Some(piece) => handlePieceDragging(piece, state, event)
+      }
+    } yield ()
+  }
+
+  def handlePieceDragging(
+      piece: ColoredPiece,
+      state: State,
+      event: PlacedPieceDragging
+  ): IO[Unit] = event.e.kind match {
+    case Start => for {
+        _ <- IO(piece.isVisible.set(false))
+        _ <- handlePieceDragging(
+          state,
+          event.e,
+          ExApp.pieceImgPath(piece.color, piece.piece)
+        )
+      } yield ()
+    case Move => handlePieceDragging(
+        state,
+        event.e,
+        ExApp.pieceImgPath(piece.color, piece.piece)
+      )
+    case End => onEndPlacedPieceDragging(piece, state, event)
+  }
+
+  def onEndPlacedPieceDragging(
+      piece: ColoredPiece,
+      state: State,
+      event: PlacedPieceDragging
+  ): IO[Unit] = {
+    for {
+      _ <- IO(piece.isVisible.set(true))
+      _ <- IO(state.draggingPieceState.set(None))
+      tilePosOpt <- tileLogicPos(state, event.e).value
+      _ <- tilePosOpt match {
+        case Some(tilePos) =>
+          movePlacedPiece(state, event.fromPos, tilePos, piece)
+        case None => IO.unit
+      }
+    } yield ()
+  }
+
+  def movePlacedPiece(
+      state: State,
+      fromPos: Vec2d,
+      toPos: Vec2d,
+      piece: ColoredPiece
+  ): IO[Unit] = for {
+    _ <- removePiece(fromPos, state)
+    _ <- placePiece(toPos, piece.color, piece.piece, state)
+  } yield ()
+
+  def removePiece(pos: Vec2d, state: State): IO[Unit] =
+    IO(state.placedPieces.update(v => v.removed(pos)))
+
+  def placedPieceOnPos(pos: Vec2d, state: State): OptionT[IO, ColoredPiece] =
+    for {
+      placedPieces <- OptionT.liftF(IO(state.placedPieces.now()))
+      pieceOnPos <- OptionT.fromOption[IO](placedPieces.get(pos))
+    } yield (pieceOnPos)
+
+  def tileLogicPos(state: State, e: Dragging.Event): OptionT[IO, Vec2d] = for {
+    boardSize <- OptionT.liftF(IO(state.boardSize.now()))
+    containerRef <- OptionT(IO(state.containerRef.now()))
+    canvasPos = getRelativePosition(e.e, containerRef)
+    canvasSize = state.canvasSize
+    tilePos <- OptionT
+      .fromOption[IO](tileLogicPos(boardSize, canvasSize, canvasPos))
+  } yield (tilePos)
 
   def onEnd(state: State, e: PickerPieceDragging): IO[Unit] = {
     (
       for {
         _ <- OptionT.liftF(IO(state.draggingPieceState.set(None)))
-        canvasSize = state.canvasSize
-        boardSize <- OptionT.liftF(IO(state.boardSize.now()))
-        containerRef <- OptionT(IO(state.containerRef.now()))
-        canvasPos = getRelativePosition(e.e.e, containerRef)
-        tilePos <- OptionT
-          .fromOption[IO](tileLogicPos(boardSize, canvasSize, canvasPos))
+        tilePos <- tileLogicPos(state, e.e)
         _ <- OptionT.liftF(placePiece(tilePos, e.color, e.piece, state))
       } yield ()
     ).getOrElse(())
@@ -53,7 +129,9 @@ object EvHandler {
       piece: Fig,
       state: State
   ): IO[Unit] = IO {
-    state.placedPieces.update(v => v.updated(pos, (color, piece)))
+    state
+      .placedPieces
+      .update(v => v.updated(pos, ColoredPiece(color, piece, Var(true))))
   }
 
   def tileLogicPos(
@@ -95,11 +173,21 @@ object EvHandler {
 
   def onStart(state: State, e: PickerPieceDragging): IO[Unit] = {
     val imgPath = ExApp.pieceImgPath(e.color, e.piece)
-    IO(
-      state
-        .draggingPieceState
-        .set(Some(DraggingPieceState(imgPath = imgPath, draggingEvent = e.e)))
-    )
+    handlePieceDragging(state, e.e, imgPath)
   }
+
+  def handlePieceDragging(
+      state: State,
+      draggingEvent: Dragging.Event,
+      imgPath: String
+  ): IO[Unit] = IO(
+    state
+      .draggingPieceState
+      .set(
+        Some(
+          DraggingPieceState(imgPath = imgPath, draggingEvent = draggingEvent)
+        )
+      )
+  )
 
 }

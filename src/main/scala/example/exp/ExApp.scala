@@ -35,7 +35,7 @@ object ExApp {
       handler: Ev => IO[Unit]
   ): Element = {
     val imgPath = pieceImgPath(color, piece)
-    val draggingId = PieceDraggingId(piece, color)
+    val draggingId = PickerPieceDraggingId(piece, color)
 
     svg.svg(
       svgSizeAttrs(pieceSize),

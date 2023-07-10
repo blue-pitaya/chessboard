@@ -18,9 +18,16 @@ object ExAppModel {
   case object White extends FigColor
   case object Black extends FigColor
 
-  case class PieceDraggingId(piece: Fig, color: FigColor)
+  sealed trait PieceDraggingId
+  case class PickerPieceDraggingId(piece: Fig, color: FigColor)
+      extends PieceDraggingId
+  case class PlacedPieceDraggingId(fromPos: Vec2d) extends PieceDraggingId
 
   case class DraggingPieceState(imgPath: String, draggingEvent: Dragging.Event)
+
+  case class ColoredPiece(color: FigColor, piece: Fig, isVisible: Var[Boolean])
+
+  type PlacedPieces = Map[Vec2d, ColoredPiece]
 
   case class State(
       dm: Dragging.DraggingModule[PieceDraggingId],
@@ -28,7 +35,7 @@ object ExAppModel {
       containerRef: Var[Option[dom.Element]],
       boardSize: Var[Vec2d],
       canvasSize: Vec2d,
-      placedPieces: Var[Map[Vec2d, (FigColor, Fig)]]
+      placedPieces: Var[PlacedPieces]
   )
   object State {
     def init = State(
@@ -47,4 +54,5 @@ object ExAppModel {
   case class BoardContainerRefChanged(v: dom.Element) extends Ev
   case class BoardWidthChanged(v: Int) extends Ev
   case class BoardHeightChanged(v: Int) extends Ev
+  case class PlacedPieceDragging(e: Dragging.Event, fromPos: Vec2d) extends Ev
 }

@@ -8,6 +8,7 @@ import example.game.Vec2d
 
 object ExBoard {
   import ExAppModel._
+  import ExApp.DM
 
   type BoardSize = Vec2d
   type BoardPos = Vec2d
@@ -26,12 +27,15 @@ object ExBoard {
     val _tileComponents =
       (bs: BoardSize) => tileComponents(_tileComponent(bs), bs)
     val _tilesSignal = tilesSignal(_tileComponents, state.boardSize.signal)
+    val _placedPieceDraggingBindings =
+      (pos: BoardPos) => placedPieceDraggingBindings(pos, state.dm, handler)
 
     val _placedPiecesSignal = placedPiecesSignal(
       state.boardSize.signal,
       state.placedPieces.signal,
       _tileSize,
-      _tileCanvasPos
+      _tileCanvasPos,
+      _placedPieceDraggingBindings
     )
 
     svg.svg(
@@ -44,34 +48,51 @@ object ExBoard {
     )
   }
 
+  def placedPieceDraggingBindings(
+      fromPos: Vec2d,
+      dm: DM[PieceDraggingId],
+      handler: Ev => IO[Unit]
+  ): Seq[Binder.Base] = {
+    val draggingId = PlacedPieceDraggingId(fromPos)
+    dm.componentBindings(draggingId) ++
+      Seq(
+        dm.componentEvents(draggingId)
+          .map(e => PlacedPieceDragging(e, fromPos)) -->
+          ExApp.catsRunObserver(handler)
+      )
+  }
+
   def placedPiecesSignal(
       boardSizeSignal: Signal[Vec2d],
-      placedPiecesSignal: Signal[Map[Vec2d, (FigColor, Fig)]],
+      placedPiecesSignal: Signal[PlacedPieces],
       tileSize: BoardSize => Int,
-      canvasPos: BoardSize => BoardPos => Vec2d
+      canvasPos: BoardSize => BoardPos => Vec2d,
+      draggingBindings: BoardPos => Seq[Binder.Base]
   ): Signal[List[Element]] = {
     placedPiecesSignal
       .combineWith(boardSizeSignal)
       .map { case (placedPieces, boardSize) =>
-        val _tileSize = tileSize(boardSize)
-        val pieces = placedPiecesOnBoard(placedPieces, boardSize)
-        pieces.map { case (pos, color, piece) =>
-          val _canvasPos = canvasPos(boardSize)(pos)
-          val imgPath = ExApp.pieceImgPath(color, piece)
-          placedPieceComponent(_canvasPos, _tileSize, imgPath, Val(true))
+        placedPiecesOnBoard(placedPieces, boardSize).map { case (pos, piece) =>
+          val imgPath = ExApp.pieceImgPath(piece.color, piece.piece)
+          placedPieceComponent(
+            canvasPos(boardSize)(pos),
+            tileSize(boardSize),
+            imgPath,
+            piece.isVisible.signal,
+            draggingBindings(pos)
+          )
         }
       }
   }
 
   def placedPiecesOnBoard(
-      placedPieces: Map[Vec2d, (FigColor, Fig)],
+      placedPieces: PlacedPieces,
       boardSize: Vec2d
-  ): List[(Vec2d, FigColor, Fig)] = {
+  ): List[(Vec2d, ColoredPiece)] = {
     placedPieces
       .toList
       .collect {
-        case (pos, (color, piece)) if isPosOnBoard(pos, boardSize) =>
-          (pos, color, piece)
+        case (pos, piece) if isPosOnBoard(pos, boardSize) => (pos, piece)
       }
   }
 
@@ -85,7 +106,8 @@ object ExBoard {
       pos: Vec2d,
       tileSize: Int,
       pieceImgPath: String,
-      isVisibleSignal: Signal[Boolean]
+      isVisibleSignal: Signal[Boolean],
+      draggingBindings: Seq[Binder.Base]
   ): Element = {
     svg.image(
       svg.x(pos.x.toString()),
@@ -97,7 +119,8 @@ object ExBoard {
           case true => pieceImgPath
           // TODO: quick hack
           case false => ""
-        }
+        },
+      draggingBindings
     )
   }
 
