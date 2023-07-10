@@ -1,13 +1,6 @@
 package example.pages.creator
 
 import com.raquo.laminar.api.L._
-import example.exp.EvHandler
-import example.exp.ExApp
-import example.exp.ExAppModel
-import example.exp.ExBoard
-import example.exp.ExBoardForm
-import example.exp.ExDraggingPiece
-import example.exp.ExDeleteZone
 
 object CreatorPage {
   def component(): HtmlElement = {

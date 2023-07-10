@@ -1,4 +1,4 @@
-package example.exp
+package example.pages.creator
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global

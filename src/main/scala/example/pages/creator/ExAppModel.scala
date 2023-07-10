@@ -1,4 +1,4 @@
-package example.exp
+package example.pages.creator
 
 import com.raquo.airstream.state.Var
 import dev.bluepitaya.laminardragging.Dragging

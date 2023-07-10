@@ -1,4 +1,4 @@
-package example.exp
+package example.pages.creator
 
 import com.raquo.laminar.api.L._
 import cats.effect.IO

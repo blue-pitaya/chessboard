@@ -4,7 +4,7 @@ import example.game._
 import example.models._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import example.game.Vec2d
+import chessboardcore.Vec2d
 
 class PossibleMovesSpec extends AnyFlatSpec with Matchers {
   val boardSize: Vec2d = Vec2d(8, 8)

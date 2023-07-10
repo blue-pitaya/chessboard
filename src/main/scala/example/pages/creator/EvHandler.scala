@@ -1,4 +1,4 @@
-package example.exp
+package example.pages.creator
 
 import cats.data.OptionT
 import cats.effect.IO

@@ -4,7 +4,7 @@ import example.game._
 import example.models._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import example.game.Vec2d
+import chessboardcore.Vec2d
 
 class GameLogicSpec extends AnyFlatSpec with Matchers {
   "pawn en passant move" should "kill pawn that made 2 tile move" in {
