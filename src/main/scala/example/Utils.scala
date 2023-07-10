@@ -1,6 +1,6 @@
 package example
 
-import example.game.Vec2d
+import chessboardcore.Vec2d
 
 object Utils {
   def takeWhileInclusive[A](

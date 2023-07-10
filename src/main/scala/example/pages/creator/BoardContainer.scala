@@ -3,7 +3,7 @@ package example.pages.creator
 import com.raquo.laminar.api.L._
 import dev.bluepitaya.laminardragging.Dragging
 import dev.bluepitaya.laminardragging.Vec2f
-import example.game.Vec2d
+import chessboardcore.Vec2d
 import example.pages.creator.logic.BoardUiLogic
 import example.pages.creator.logic.DraggingId
 import org.scalajs.dom

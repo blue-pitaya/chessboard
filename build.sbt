@@ -7,7 +7,31 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / organization := "com.example"
 ThisBuild / organizationName := "example"
 
+lazy val core = crossProject(JSPlatform, JVMPlatform)
+  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("core"))
+  .settings(
+    name :=
+      "chessboard-core"
+      // libraryDependencies += "io.circe" %%% "circe-core" % circeVersion,
+      // libraryDependencies += "io.circe" %%% "circe-generic" % circeVersion,
+      // libraryDependencies += "io.circe" %%% "circe-parser" % circeVersion,
+      // libraryDependencies += "io.bullet" %%% "spliff" % "0.7.1",
+      // libraryDependencies += "com.softwaremill.common" %%% "tagging" % "2.3.4",
+      // libraryDependencies += "com.softwaremill.sttp.client3" %%% "cats" % "3.8.2",
+      // libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.13" % Test
+  )
+  .jsSettings(
+    scalaJSLinkerConfig ~=
+      (_.withModuleKind(ModuleKind.ESModule)
+        .withESFeatures(_.withESVersion(ESVersion.ES2021))
+        .withSourceMap(false)),
+    scalaJSUseMainModuleInitializer := false
+  )
+
 lazy val root = (project in file("."))
+  .dependsOn(core.js)
   .settings(
     scalacOptions := Seq("-Wunused:imports"),
     name := "chessboard",
@@ -32,13 +56,15 @@ lazy val root = (project in file("."))
 
 val http4sVersion = "0.23.22"
 
-lazy val api = (project in file("api")).settings(
-  scalacOptions := Seq("-Wunused:imports"),
-  name := "chessboard-api",
-  libraryDependencies ++=
-    Seq(
-      "org.http4s" %% "http4s-ember-client" % http4sVersion,
-      "org.http4s" %% "http4s-ember-server" % http4sVersion,
-      "org.http4s" %% "http4s-dsl" % http4sVersion
-    )
-)
+lazy val api = (project in file("api"))
+  .dependsOn(core.jvm)
+  .settings(
+    scalacOptions := Seq("-Wunused:imports"),
+    name := "chessboard-api",
+    libraryDependencies ++=
+      Seq(
+        "org.http4s" %% "http4s-ember-client" % http4sVersion,
+        "org.http4s" %% "http4s-ember-server" % http4sVersion,
+        "org.http4s" %% "http4s-dsl" % http4sVersion
+      )
+  )

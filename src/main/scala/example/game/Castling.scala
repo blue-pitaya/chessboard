@@ -4,6 +4,7 @@ import example.models.King
 import example.models.Piece
 import example.models.PieceColor
 import example.models.Rook
+import chessboardcore.Vec2d
 
 // assuming standard chessboard setup
 object Castling {

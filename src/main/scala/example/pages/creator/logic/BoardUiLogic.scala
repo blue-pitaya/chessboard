@@ -6,7 +6,7 @@ import dev.bluepitaya.laminardragging.DragEventKind.Move
 import dev.bluepitaya.laminardragging.DragEventKind.Start
 import dev.bluepitaya.laminardragging.Dragging
 import dev.bluepitaya.laminardragging.Vec2f
-import example.game.Vec2d
+import chessboardcore.Vec2d
 import example.pages.creator.Models
 import example.pages.creator.logic.DraggingId.PieceOnBoardId
 import example.pages.creator.logic.DraggingId.PieceOnPicker

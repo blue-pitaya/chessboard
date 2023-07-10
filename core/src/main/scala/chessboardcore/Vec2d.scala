@@ -1,4 +1,4 @@
-package example.game
+package chessboardcore
 
 case class Vec2d(x: Int, y: Int) {
   def +(v: Vec2d): Vec2d = Vec2d(x + v.x, y + v.y)

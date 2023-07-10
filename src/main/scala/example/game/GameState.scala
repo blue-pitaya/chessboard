@@ -1,6 +1,7 @@
 package example.game
 
 import example.models.Piece
+import chessboardcore.Vec2d
 
 sealed trait GameMove
 final case class Move(piece: Piece, from: Vec2d, to: Vec2d) extends GameMove

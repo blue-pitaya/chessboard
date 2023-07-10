@@ -3,21 +3,10 @@ package example.exp
 import com.raquo.airstream.state.Var
 import dev.bluepitaya.laminardragging.Dragging
 import org.scalajs.dom
-import example.game.Vec2d
+import chessboardcore.Vec2d
+import chessboardcore.Model._
 
 object ExAppModel {
-  sealed trait Fig
-  case object Pawn extends Fig
-  case object Rook extends Fig
-  case object Knight extends Fig
-  case object Bishop extends Fig
-  case object Queen extends Fig
-  case object King extends Fig
-
-  sealed trait FigColor
-  case object White extends FigColor
-  case object Black extends FigColor
-
   sealed trait PieceDraggingId
   case class PickerPieceDraggingId(piece: Fig, color: FigColor)
       extends PieceDraggingId

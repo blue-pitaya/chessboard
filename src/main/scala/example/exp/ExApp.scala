@@ -4,8 +4,9 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.raquo.laminar.api.L._
 import dev.bluepitaya.laminardragging.Dragging
-import example.game.Vec2d
+import chessboardcore.Vec2d
 import org.scalajs.dom
+import chessboardcore.Model._
 
 //TODO: bg-stone-800 should be dried
 

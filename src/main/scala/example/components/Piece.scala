@@ -4,7 +4,7 @@ import com.raquo.laminar.api.L._
 import example.game.GameState
 import example.models
 import org.scalajs.dom
-import example.game.Vec2d
+import chessboardcore.Vec2d
 
 case class PieceObj(id: String, position: Vec2d, piece: models.Piece)
 

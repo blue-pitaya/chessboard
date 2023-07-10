@@ -2,6 +2,7 @@ package example.game
 
 import example.Utils.takeWhileInclusive
 import example.models._
+import chessboardcore.Vec2d
 
 object PossibleMoves {
 

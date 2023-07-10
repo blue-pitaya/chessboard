@@ -4,7 +4,7 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.raquo.laminar.api.L._
 import org.scalajs.dom
-import example.game.Vec2d
+import chessboardcore.Vec2d
 
 object ExBoard {
   import ExAppModel._

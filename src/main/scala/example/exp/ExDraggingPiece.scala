@@ -2,7 +2,7 @@ package example.exp
 
 import cats.effect.IO
 import com.raquo.laminar.api.L._
-import example.game.Vec2d
+import chessboardcore.Vec2d
 import org.scalajs.dom
 
 object ExDraggingPiece {
