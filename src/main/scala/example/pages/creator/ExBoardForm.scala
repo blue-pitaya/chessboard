@@ -1,7 +1,6 @@
 package example.pages.creator
 
 import com.raquo.laminar.api.L._
-import com.raquo.laminar.codecs.StringAsIsCodec
 import cats.effect.IO
 
 object ExBoardForm {
@@ -12,7 +11,7 @@ object ExBoardForm {
     val heightSignal = state.boardSize.signal.map(_.y.toString())
 
     div(
-      cls("w-[200px] flex flex-col bg-stone-800 p-3"),
+      cls("w-[200px] flex flex-col bg-stone-800 p-3 gap-4"),
       "Board width",
       input(
         cls("text-gray-900"),
@@ -32,45 +31,24 @@ object ExBoardForm {
           onInput.mapToValue.map(v => BoardHeightChanged(v.toInt)) -->
             ExApp.catsRunObserver(handler)
         )
-      )
-    )
-  }
-
-  private def inputEl = {
-    val v = Var("")
-
-    div(
-      cls("relative mb-3"),
-      htmlAttr("data-te-input-wrapper-init", StringAsIsCodec) := "",
-      input(
-        typ("number"),
-        cls(
-          "peer block min-h-[auto] w-full rounded border-0 bg-transparent px-3 py-[0.32rem] leading-[1.6] outline-none transition-all duration-200 ease-linear focus:placeholder:opacity-100 peer-focus:text-primary data-[te-input-state-active]:placeholder:opacity-100 motion-reduce:transition-none dark:text-neutral-200 dark:placeholder:text-neutral-200 dark:peer-focus:text-primary [&:not([data-te-input-placeholder-active])]:placeholder:opacity-0"
-        ),
-        idAttr("pl"),
-        placeholder("Example label"),
-        controlled(value <-- v, onInput.mapToValue --> v)
       ),
-      label(
-        forId("pl"),
-        cls(
-          "pointer-events-none absolute left-3 top-0 mb-0 max-w-[90%] origin-[0_0] truncate pt-[0.37rem] leading-[1.6] text-neutral-500 transition-all duration-200 ease-out peer-focus:-translate-y-[0.9rem] peer-focus:scale-[0.8] peer-focus:text-primary peer-data-[te-input-state-active]:-translate-y-[0.9rem] peer-data-[te-input-state-active]:scale-[0.8] motion-reduce:transition-none dark:text-neutral-200 dark:peer-focus:text-primary"
-        ),
-        "Number input"
+      button(
+        cls(ButtonCls),
+        "Save board",
+        onClick.mapToUnit -->
+          commitEvObserver[Unit](handler, _ => SaveBoardRequested())
       )
     )
   }
 
-//  <div class="relative mb-3" data-te-input-wrapper-init>
-//  <input
-//    type="number"
-//    class=""
-//    id="exampleFormControlInputNumber"
-//    placeholder="Example label" />
-//  <label
-//    for="exampleFormControlInputNumber"
-//    class=""
-//    >Number input
-//  </label>
-//</div>
+  def commitEvObserver[A](
+      handler: Ev => IO[Unit],
+      mapFn: A => Ev
+  ): Observer[A] = Observer[A] { v =>
+    ExBoard.catsRun(handler)(mapFn(v))
+  }
+
+  private val ButtonCls =
+    "text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700"
+
 }

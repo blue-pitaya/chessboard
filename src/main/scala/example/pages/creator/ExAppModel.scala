@@ -47,4 +47,5 @@ object ExAppModel {
   case class BoardHeightChanged(v: Int) extends Ev
   case class PlacedPieceDragging(e: Dragging.Event, fromPos: Vec2d) extends Ev
   case class RemoveZoneRefChanged(v: dom.Element) extends Ev
+  case class SaveBoardRequested() extends Ev
 }

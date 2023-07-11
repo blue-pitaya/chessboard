@@ -34,6 +34,7 @@ object EvHandler {
       case e: PlacedPieceDragging => handlePlacedPieceDragging(state, e)
       case RemoveZoneRefChanged(v) =>
         IO(state.removeZoneComponentRef.set(Some(v)))
+      case SaveBoardRequested() => IO.println("ok")
     }
   }
 
