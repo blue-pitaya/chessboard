@@ -31,12 +31,13 @@ lazy val root = (project in file("."))
   .settings(
     scalacOptions := Seq("-Wunused:imports"),
     name := "chessboard",
-    libraryDependencies += "com.raquo" %%% "laminar" % "15.0.0-M7",
-    libraryDependencies += "com.raquo" %%% "waypoint" % "6.0.0-M4",
+    libraryDependencies += "com.raquo" %%% "laminar" % "16.0.0",
+    libraryDependencies += "com.raquo" %%% "waypoint" % "7.0.0",
     libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.13" % Test,
     libraryDependencies += "org.typelevel" %%% "cats-core" % "2.8.0",
     libraryDependencies += "org.typelevel" %%% "cats-effect" % "3.3.14",
-    libraryDependencies += "dev.bluepitaya" %%% "laminar-dragging" % "1.0",
+    libraryDependencies += "dev.bluepitaya" %%% "laminar-dragging" % "1.1",
+    libraryDependencies += "io.laminext" %%% "fetch" % "0.15.0",
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.ESModule)
         .withOutputPatterns(OutputPatterns.fromJSFile("%s.js"))
