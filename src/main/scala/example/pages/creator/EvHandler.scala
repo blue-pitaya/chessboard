@@ -2,15 +2,15 @@ package example.pages.creator
 
 import cats.data.OptionT
 import cats.effect.IO
+import chessboardcore.Model._
+import chessboardcore.Vec2d
 import com.raquo.laminar.api.L._
 import dev.bluepitaya.laminardragging.DragEventKind.End
 import dev.bluepitaya.laminardragging.DragEventKind.Move
 import dev.bluepitaya.laminardragging.DragEventKind.Start
 import dev.bluepitaya.laminardragging.Dragging
 import dev.bluepitaya.laminardragging.Vec2f
-import chessboardcore.Vec2d
 import org.scalajs.dom
-import chessboardcore.Model._
 
 object EvHandler {
   import ExAppModel._

@@ -37,7 +37,14 @@ lazy val root = (project in file("."))
     libraryDependencies += "org.typelevel" %%% "cats-core" % "2.8.0",
     libraryDependencies += "org.typelevel" %%% "cats-effect" % "3.3.14",
     libraryDependencies += "dev.bluepitaya" %%% "laminar-dragging" % "1.1",
-    libraryDependencies += "io.laminext" %%% "fetch" % "0.15.0",
+    libraryDependencies += "org.http4s" %%% "http4s-circe" % Http4sVersion,
+    libraryDependencies += "io.circe" %%% "circe-generic" % CirceVersion,
+    libraryDependencies ++=
+      Seq(
+        "org.http4s" %%% "http4s-client" % Http4sVersion,
+        "org.http4s" %%% "http4s-dom" % "0.2.9",
+        "org.http4s" %%% "http4s-dsl" % Http4sVersion
+      ),
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.ESModule)
         .withOutputPatterns(OutputPatterns.fromJSFile("%s.js"))

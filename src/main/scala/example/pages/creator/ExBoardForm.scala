@@ -1,7 +1,7 @@
 package example.pages.creator
 
-import com.raquo.laminar.api.L._
 import cats.effect.IO
+import com.raquo.laminar.api.L._
 
 object ExBoardForm {
   import ExAppModel._
