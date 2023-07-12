@@ -5,36 +5,23 @@ import com.raquo.laminar.api.L._
 import com.raquo.waypoint._
 import example.pages.creator.CreatorPage
 import example.pages.home.HomePage
-import org.http4s._
-import org.http4s.dom._
-import org.http4s.implicits._
-import org.scalajs.dom
-import cats.effect.unsafe.implicits.global
 import org.http4s.client.Client
+import org.http4s.dom._
+import org.scalajs.dom
+import example.pages.game.GamePage
 
 object Main extends App {
-  // encapsulate!
   val client: Client[IO] = FetchClientBuilder[IO].create
 
-  def testMe() = {
-    val request = Request[IO](
-      method = Method.GET,
-      uri = uri"http://localhost:8080/chessboard"
-    )
-
-    client.expect[String](request).flatMap(IO.println)
-  }
-
-  testMe().unsafeRunAndForget()
-
   def splitRenderer =
-    SplitRender[PageKey, HtmlElement](AppRouter.router.currentPageSignal)
+    SplitRender[PageKey, Element](AppRouter.router.currentPageSignal)
       .collectStatic(PageKey.Home) {
         HomePage.component()
       }
       .collectStatic(PageKey.BoardCreator) {
         CreatorPage.component()
       }
+      .collect[PageKey.Game](key => GamePage.component(key.id))
 
   def containerNode = dom.document.querySelector("#app")
   val app = div(child <-- splitRenderer.signal)

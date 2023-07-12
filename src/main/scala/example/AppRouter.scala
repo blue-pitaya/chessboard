@@ -2,37 +2,48 @@ package example
 
 import com.raquo.laminar.api.L._
 import com.raquo.waypoint._
+import io.circe.Json
+import io.circe.generic.auto._
+import io.circe.syntax._
 import org.scalajs.dom
 
 sealed trait PageKey
 object PageKey {
   case object Home extends PageKey
   case object BoardCreator extends PageKey
-  case object Game extends PageKey
+  case class Game(id: String) extends PageKey
+  case object NotFound extends PageKey
 
-  def serialized(key: PageKey): String = key.toString()
+  def serialized(key: PageKey): String = key.asJson.toString()
 
-  def deserialized(v: String): PageKey = v match {
-    case v if v == "Home"         => Home
-    case v if v == "BoardCreator" => BoardCreator
-    case v if v == "Game"         => Game
-  }
+  def deserialized(v: String): PageKey = Json
+    .fromString(v)
+    .as[PageKey]
+    .getOrElse(NotFound)
 
   def pageTitle(key: PageKey): String = "Chessboard"
 }
 
 object AppRouter {
 
-  val homeRoute = Route.static(PageKey.Home, root / endOfSegments)
-  val boardCreatorRoute = Route
-    .static(PageKey.BoardCreator, root / "create_board" / endOfSegments)
+  val router = {
+    val homeRoute = Route.static(PageKey.Home, root / endOfSegments)
+    val boardCreatorRoute = Route
+      .static(PageKey.BoardCreator, root / "create_board" / endOfSegments)
+    val gameRoute = Route[PageKey.Game, String](
+      encode = _.id,
+      decode = PageKey.Game(_),
+      pattern = root / "game" / segment[String] / endOfSegments
+    )
+    val routes = List(homeRoute, boardCreatorRoute, gameRoute)
 
-  val router = new Router[PageKey](
-    routes = List(homeRoute, boardCreatorRoute),
-    getPageTitle = PageKey.pageTitle,
-    serializePage = PageKey.serialized,
-    deserializePage = PageKey.deserialized
-  )(popStateEvents = windowEvents(_.onPopState), owner = unsafeWindowOwner)
+    new Router[PageKey](
+      routes = routes,
+      getPageTitle = PageKey.pageTitle,
+      serializePage = PageKey.serialized,
+      deserializePage = PageKey.deserialized
+    )(popStateEvents = windowEvents(_.onPopState), owner = unsafeWindowOwner)
+  }
 
   def navigateTo(page: PageKey): Binder[HtmlElement] = Binder { el =>
     val isLinkElement = el.ref.isInstanceOf[dom.html.Anchor]
