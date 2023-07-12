@@ -22,7 +22,7 @@ object ExBoardForm {
             ExApp.catsRunObserver(handler)
         )
       ),
-      p("Board height"),
+      "Board height",
       input(
         cls("text-gray-900"),
         typ("number"),
@@ -37,6 +37,15 @@ object ExBoardForm {
         "Save board",
         onClick.mapToUnit -->
           commitEvObserver[Unit](handler, _ => SaveBoardRequested())
+      ),
+      button(
+        cls(ButtonCls),
+        "Create game",
+        onClick.mapToUnit -->
+          commitEvObserver[Unit](
+            handler,
+            _ => CreateGameUsingCurrentBoardRequested()
+          )
       )
     )
   }

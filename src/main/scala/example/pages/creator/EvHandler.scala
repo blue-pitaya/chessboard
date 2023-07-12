@@ -2,6 +2,7 @@ package example.pages.creator
 
 import cats.data.OptionT
 import cats.effect.IO
+import chessboardcore.HttpModel
 import chessboardcore.Model._
 import chessboardcore.Vec2d
 import com.raquo.laminar.api.L._
@@ -10,10 +11,19 @@ import dev.bluepitaya.laminardragging.DragEventKind.Move
 import dev.bluepitaya.laminardragging.DragEventKind.Start
 import dev.bluepitaya.laminardragging.Dragging
 import dev.bluepitaya.laminardragging.Vec2f
+import example.Main
+import io.circe.generic.auto._
+import io.circe.syntax._
+import org.http4s._
+import org.http4s.circe._
+import org.http4s.client.Client
+import org.http4s.implicits._
 import org.scalajs.dom
 
 object EvHandler {
   import ExAppModel._
+
+  val ApiPath = uri"http://localhost:8080/"
 
   def handle(state: State, event: Ev): IO[Unit] = {
     event match {
@@ -34,8 +44,29 @@ object EvHandler {
       case e: PlacedPieceDragging => handlePlacedPieceDragging(state, e)
       case RemoveZoneRefChanged(v) =>
         IO(state.removeZoneComponentRef.set(Some(v)))
-      case SaveBoardRequested() => IO.println("ok")
+      case SaveBoardRequested() => saveBoard(state, Main.client)
+      case CreateGameUsingCurrentBoardRequested() => IO.unit
     }
+  }
+
+  def saveBoard(state: State, httpClient: Client[IO]): IO[Unit] = {
+    val boardSize = state.boardSize.now()
+    val pieces = state
+      .placedPieces
+      .now()
+      .toList
+      .map { case (pos, coloredPiece) =>
+        PlacedPiece(
+          pos = pos,
+          piece = Piece(color = coloredPiece.color, kind = coloredPiece.piece)
+        )
+      }
+    val data = HttpModel
+      .CreateChessboard_In(boardSize = boardSize, pieces = pieces)
+    val uri = ApiPath / "chessboard"
+    val request = Request[IO](Method.PUT, uri).withEntity(data.asJson)
+
+    httpClient.expect[Unit](request)
   }
 
   def handlePlacedPieceDragging(

@@ -10,9 +10,11 @@ import org.http4s.dom._
 import org.http4s.implicits._
 import org.scalajs.dom
 import cats.effect.unsafe.implicits.global
+import org.http4s.client.Client
 
 object Main extends App {
-  val client = FetchClientBuilder[IO].create
+  // encapsulate!
+  val client: Client[IO] = FetchClientBuilder[IO].create
 
   def testMe() = {
     val request = Request[IO](
