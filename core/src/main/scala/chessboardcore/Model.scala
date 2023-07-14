@@ -16,4 +16,19 @@ object Model {
   case class Piece(color: FigColor, kind: Fig)
 
   case class PlacedPiece(pos: Vec2d, piece: Piece)
+
+  case class TimeSettings(timePerPlayerInSec: Int)
+  case class Board(size: Vec2d, pieces: List[Model.PlacedPiece])
+
+  sealed trait PlayerState
+  object PlayerState {
+    case object Empty extends PlayerState
+    case object Sitting extends PlayerState
+    case object Ready extends PlayerState
+  }
+
+  case class Players(white: PlayerState, black: PlayerState)
+  object Players {
+    def init = Players(white = PlayerState.Empty, black = PlayerState.Empty)
+  }
 }

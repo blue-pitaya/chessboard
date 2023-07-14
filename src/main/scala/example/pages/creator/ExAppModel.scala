@@ -5,6 +5,7 @@ import dev.bluepitaya.laminardragging.Dragging
 import org.scalajs.dom
 import chessboardcore.Vec2d
 import chessboardcore.Model._
+import cats.effect.IO
 
 object ExAppModel {
   sealed trait PieceDraggingId
@@ -17,6 +18,7 @@ object ExAppModel {
   case class ColoredPiece(color: FigColor, piece: Fig, isVisible: Var[Boolean])
 
   type PlacedPieces = Map[Vec2d, ColoredPiece]
+  type EvHandler = Ev => IO[Unit]
 
   case class State(
       dm: Dragging.DraggingModule[PieceDraggingId],

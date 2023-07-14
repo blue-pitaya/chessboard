@@ -99,6 +99,7 @@ object ExBoard {
   def isPosOnBoard(pos: Vec2d, boardSize: Vec2d): Boolean =
     isBetween(pos, Vec2d.zero, boardSize)
 
+  // TODO: dups in 2 places (search for isInside...)
   def isBetween(v: Vec2d, b1: Vec2d, b2: Vec2d): Boolean = v.x >= b1.x &&
     v.y >= b1.y && v.x < b2.x && v.y < b2.y
 

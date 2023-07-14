@@ -19,6 +19,8 @@ import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.implicits._
 import org.scalajs.dom
+import example.AppRouter
+import example.PageKey
 
 object EvHandler {
   import ExAppModel._
@@ -45,8 +47,40 @@ object EvHandler {
       case RemoveZoneRefChanged(v) =>
         IO(state.removeZoneComponentRef.set(Some(v)))
       case SaveBoardRequested() => saveBoard(state, Main.client)
-      case CreateGameUsingCurrentBoardRequested() => IO.unit
+      case CreateGameUsingCurrentBoardRequested() =>
+        createGame(state, Main.client)
     }
+  }
+
+  def createGame(state: State, httpClient: Client[IO]): IO[Unit] = {
+    val uri = ApiPath / "game"
+    val data = HttpModel.CreateGame_In(board(state))
+    val request = Request[IO](Method.PUT, uri).withEntity(data.asJson)
+
+    for {
+      newGameId <- httpClient.expect[String](request)
+      _ <- redirectToGame(newGameId)
+    } yield ()
+  }
+
+  def redirectToGame(id: String): IO[Unit] =
+    IO(AppRouter.router.pushState(PageKey.Game(id)))
+
+  def board(state: State): Board = {
+    val boardSize = state.boardSize.now()
+    val piecesOnBoard = state
+      .placedPieces
+      .now()
+      .toList
+      .collect {
+        case (pos, coloredPiece) if ExBoard.isPosOnBoard(pos, boardSize) =>
+          PlacedPiece(
+            pos = pos,
+            piece = Piece(coloredPiece.color, coloredPiece.piece)
+          )
+      }
+
+    Board(size = boardSize, pieces = piecesOnBoard)
   }
 
   def saveBoard(state: State, httpClient: Client[IO]): IO[Unit] = {
@@ -201,6 +235,7 @@ object EvHandler {
 
   def toVec2f(v: Vec2d): Vec2f = Vec2f(v.x, v.y)
 
+  // TODO: dups in 2 places
   def isBetween(v: Vec2f, b1: Vec2f, b2: Vec2f): Boolean = v.x >= b1.x &&
     v.y >= b1.y && v.x < b2.x && v.y < b2.y
 

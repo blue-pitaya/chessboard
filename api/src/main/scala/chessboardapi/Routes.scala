@@ -29,6 +29,23 @@ object Routes {
           entries <- ChessboardRepository.list(stateRef)
           resp <- Ok(entries)
         } yield (resp)
+
+    }
+  }
+
+  def gameRoutes(
+      stateRefIo: IO[Ref[IO, GameServiceModel.State]]
+  ): HttpRoutes[IO] = {
+    val dsl = new Http4sDsl[IO] {}
+    import dsl._
+    HttpRoutes.of[IO] { case req @ PUT -> Root / "game" =>
+      for {
+        data <- req.as[CreateGame_In]
+        board = data.board
+        stateRef <- stateRefIo
+        gameId <- GameService.create(stateRef, board)
+        resp <- Ok(gameId)
+      } yield (resp)
     }
   }
 
