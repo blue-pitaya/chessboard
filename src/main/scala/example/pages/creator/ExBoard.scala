@@ -7,10 +7,10 @@ import org.scalajs.dom
 import example.Utils
 import dev.bluepitaya.laminardragging.Dragging
 import example.Misc
+import example.AppModel._
 
 object BoardModel {
   import ExAppModel._
-  import ExApp.DM
 
   type BoardSize = Vec2d
   type BoardPos = Vec2d
@@ -19,7 +19,7 @@ object BoardModel {
       canvasSize: Vec2d,
       boardSize: Signal[Vec2d],
       placedPieces: Signal[PlacedPieces],
-      dm: DM[PieceDraggingId]
+      dm: DM
   )
   object Signals {
     def fromCreatorPageState(s: State): Signals = Signals(
@@ -37,7 +37,6 @@ object BoardModel {
 
 object ExBoard {
   import ExAppModel._
-  import ExApp.DM
   import BoardModel._
 
   def component(signals: Signals, handler: Event => IO[Unit]): Element = {
@@ -79,10 +78,10 @@ object ExBoard {
 
   def placedPieceDraggingBindings(
       fromPos: Vec2d,
-      dm: DM[PieceDraggingId],
+      dm: DM,
       handler: Event => IO[Unit]
   ): Seq[Binder.Base] = {
-    val draggingId = PlacedPieceDraggingId(fromPos)
+    val draggingId = DraggingId.PlacedPiece(fromPos)
     dm.componentBindings(draggingId) ++
       Seq(
         dm.componentEvents(draggingId).map(e => PieceDragging(e, fromPos)) -->
@@ -117,7 +116,7 @@ object ExBoard {
   def placedPiecesOnBoard(
       placedPieces: PlacedPieces,
       boardSize: Vec2d
-  ): List[(Vec2d, PieceOnBoard)] = {
+  ): List[(Vec2d, PieceUiModel)] = {
     placedPieces
       .toList
       .collect {

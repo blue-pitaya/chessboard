@@ -5,23 +5,24 @@ import cats.effect.unsafe.implicits.global
 import chessboardcore.Model._
 import chessboardcore.Vec2d
 import com.raquo.laminar.api.L._
-import dev.bluepitaya.laminardragging.Dragging
 import example.Misc
 import org.scalajs.dom
 
 //TODO: bg-stone-800 should be dried
 
+//TODO: this should be named PiecePicker?
 object ExApp {
   import ExAppModel._
-  type DM[A] = Dragging.DraggingModule[A]
+  import example.AppModel._
 
   def component(state: State, handler: Ev => IO[Unit]) = {
-    val pieces: List[PieceKind] = List(Pawn, Rook, Knight, Bishop, Queen, King)
+    val pieceKinds: List[PieceKind] =
+      List(Pawn, Rook, Knight, Bishop, Queen, King)
     val pieceSize = Vec2d(100, 100)
-    val _pieceComponent = (c: PieceColor, p: PieceKind) =>
-      pieceComponent(state.dm, pieceSize, c, p, handler)
+    val _pieceComponent =
+      (p: Piece) => pieceComponent(state.dm, pieceSize, p, handler)
     val piecesContainerByColor =
-      (c: PieceColor) => piecesContainer(c, pieces, _pieceComponent)
+      (c: PieceColor) => piecesContainer(c, pieceKinds, _pieceComponent)
 
     div(
       cls("flex flex-row bg-stone-800"),
@@ -31,15 +32,13 @@ object ExApp {
   }
 
   def pieceComponent(
-      dm: DM[PieceDraggingId],
+      dm: DM,
       pieceSize: Vec2d,
-      color: PieceColor,
-      pieceKind: PieceKind,
+      piece: Piece,
       handler: Ev => IO[Unit]
   ): Element = {
-    val piece = Piece(color, pieceKind)
     val imgPath = Misc.pieceImgPath(piece)
-    val draggingId = PickerPieceDraggingId(pieceKind, color)
+    val draggingId = DraggingId.PickerPiece(piece)
 
     svg.svg(
       svgSizeAttrs(pieceSize),
@@ -52,10 +51,12 @@ object ExApp {
 
   def piecesContainer(
       color: PieceColor,
-      pieces: List[PieceKind],
-      pieceComponent: (PieceColor, PieceKind) => Element
-  ): Element =
-    div(cls("flex flex-col"), pieces.map(p => pieceComponent(color, p)))
+      pieceKinds: List[PieceKind],
+      pieceComponent: Piece => Element
+  ): Element = div(
+    cls("flex flex-col"),
+    pieceKinds.map(k => pieceComponent(Piece(color, k)))
+  )
 
   def catsRunObserver[A](f: A => IO[Unit]): Observer[A] = Observer[A] { e =>
     f(e).unsafeRunAsync { cb =>

@@ -112,7 +112,7 @@ object EvHandler {
   }
 
   def handlePieceDragging(
-      pieceUiModel: PieceOnBoard,
+      pieceUiModel: PieceUiModel,
       state: State,
       event: PlacedPieceDragging
   ): IO[Unit] = event.e.kind match {
@@ -130,7 +130,7 @@ object EvHandler {
   }
 
   def onEndPlacedPieceDragging(
-      piece: PieceOnBoard,
+      piece: PieceUiModel,
       state: State,
       event: PlacedPieceDragging
   ): IO[Unit] = {
@@ -164,7 +164,7 @@ object EvHandler {
       state: State,
       fromPos: Vec2d,
       toPos: Vec2d,
-      pieceUiModel: PieceOnBoard
+      pieceUiModel: PieceUiModel
   ): IO[Unit] = for {
     _ <- removePiece(fromPos, state)
     _ <- placePiece(toPos, pieceUiModel.piece, state)
@@ -173,7 +173,7 @@ object EvHandler {
   def removePiece(pos: Vec2d, state: State): IO[Unit] =
     IO(state.placedPieces.update(v => v.removed(pos)))
 
-  def placedPieceOnPos(pos: Vec2d, state: State): OptionT[IO, PieceOnBoard] =
+  def placedPieceOnPos(pos: Vec2d, state: State): OptionT[IO, PieceUiModel] =
     for {
       placedPieces <- OptionT.liftF(IO(state.placedPieces.now()))
       pieceOnPos <- OptionT.fromOption[IO](placedPieces.get(pos))
@@ -201,7 +201,7 @@ object EvHandler {
   def placePiece(pos: Vec2d, piece: Piece, state: State): IO[Unit] = IO {
     state
       .placedPieces
-      .update(v => v.updated(pos, PieceOnBoard(piece, Var(true))))
+      .update(v => v.updated(pos, PieceUiModel(piece, Var(true))))
   }
 
   def tileLogicPos(

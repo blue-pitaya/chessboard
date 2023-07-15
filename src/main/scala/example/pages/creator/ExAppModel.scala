@@ -6,24 +6,19 @@ import org.scalajs.dom
 import chessboardcore.Vec2d
 import chessboardcore.Model._
 import cats.effect.IO
+import example.AppModel._
 
 object ExAppModel {
-  val DefaultBoardCanvasSize = Vec2d(800, 800)
-
-  sealed trait PieceDraggingId
-  case class PickerPieceDraggingId(kind: PieceKind, color: PieceColor)
-      extends PieceDraggingId
-  case class PlacedPieceDraggingId(fromPos: Vec2d) extends PieceDraggingId
-
   case class DraggingPieceState(imgPath: String, draggingEvent: Dragging.Event)
 
-  case class PieceOnBoard(piece: Piece, isVisible: Var[Boolean])
+  // TODO: this should go to board component
+  case class PieceUiModel(piece: Piece, isVisible: Var[Boolean])
 
-  type PlacedPieces = Map[Vec2d, PieceOnBoard]
+  type PlacedPieces = Map[Vec2d, PieceUiModel]
   type EvHandler = Ev => IO[Unit]
 
   case class State(
-      dm: Dragging.DraggingModule[PieceDraggingId],
+      dm: Dragging.DraggingModule[DraggingId],
       draggingPieceState: Var[Option[DraggingPieceState]],
       boardContainerRef: Var[Option[dom.Element]],
       boardSize: Var[Vec2d],
@@ -33,7 +28,7 @@ object ExAppModel {
   )
   object State {
     def init = State(
-      dm = Dragging.createModule[ExAppModel.PieceDraggingId](),
+      dm = Dragging.createModule[DraggingId](),
       draggingPieceState = Var(None),
       boardContainerRef = Var(None),
       boardSize = Var(Vec2d(6, 6)),
