@@ -4,10 +4,10 @@ import cats.effect.IO
 import com.raquo.laminar.api.L._
 import example.Utils
 
-object ExDeleteZone {
+object DeleteZone {
   import ExAppModel._
 
-  def component(state: State, handler: Ev => IO[Unit]): Element = div(
+  def component(handler: Ev => IO[Unit]): Element = div(
     cls("bg-stone-800"),
     cls("flex flex-row min-h-[100px] items-center justify-around"),
     p(

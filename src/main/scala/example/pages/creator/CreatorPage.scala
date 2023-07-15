@@ -3,9 +3,10 @@ package example.pages.creator
 import com.raquo.laminar.api.L._
 import example.pages.creator.BoardModel.ElementRefChanged
 import example.pages.creator.BoardModel.PieceDragging
+import example.AppModel
 
 object CreatorPage {
-  def component(): HtmlElement = {
+  def component(dm: AppModel.DM): HtmlElement = {
     val state = ExAppModel.State.init
     val handler = (e: ExAppModel.Ev) => EvHandler.handle(state, e)
     val boardHandler = (e: BoardModel.Event) => {
@@ -16,21 +17,24 @@ object CreatorPage {
       }
       EvHandler.handle(state, generalEv)
     }
+    val boardData: BoardModel.Data = BoardModel.Data(
+      canvasSize = state.canvasSize,
+      boardSize = state.boardSize.signal,
+      placedPieces = state.placedPieces.signal,
+      dm = dm
+    )
+    val piecePickerData = PiecePickerModel.Data(dm)
 
     div(
       cls("flex flex-row gap-4 m-4"),
       ExBoardForm.component(state, handler),
-      ExBoard.component(
-        BoardModel.Signals.fromCreatorPageState(state),
-        boardHandler
-      ),
+      ExBoard.component(boardData, boardHandler),
       div(
         cls("flex flex-col w-[200px] justify-between"),
-        ExApp.component(state, handler),
-        ExDeleteZone.component(state, handler)
+        PiecePicker.component(piecePickerData, handler),
+        DeleteZone.component(handler)
       ),
-      child <-- ExDraggingPiece.componentSignal(state, handler),
-      state.dm.documentBindings
+      child <-- ExDraggingPiece.componentSignal(state, handler)
     )
   }
 

@@ -50,14 +50,14 @@ object GamePage {
       dm: DM
   ): Element = {
     val handler = (event: BoardModel.Event) => IO.unit
-    val signals: BoardModel.Signals = BoardModel.Signals(
+    val boardData: BoardModel.Data = BoardModel.Data(
       canvasSize = DefaultBoardCanvasSize,
       boardSize = Val(gameInfo.board.size),
       placedPieces = state.pieces.signal,
       dm = dm
     )
 
-    ExBoard.component(signals, handler)
+    ExBoard.component(boardData, handler)
   }
 
   def loadFromServer(id: String, state: State): IO[Unit] = ???

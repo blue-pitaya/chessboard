@@ -15,4 +15,9 @@ object AppModel {
   }
 
   type DM = Dragging.DraggingModule[DraggingId]
+
+  case class AppState(dm: DM)
+  object AppState {
+    def init = AppState(dm = Dragging.createModule[DraggingId]())
+  }
 }

@@ -20,7 +20,7 @@ object ExBoardForm {
         controlled(
           value <-- widthSignal,
           onInput.mapToValue.map(v => BoardWidthChanged(v.toInt)) -->
-            ExApp.catsRunObserver(handler)
+            PiecePicker.catsRunObserver(handler)
         )
       ),
       "Board height",
@@ -30,7 +30,7 @@ object ExBoardForm {
         controlled(
           value <-- heightSignal,
           onInput.mapToValue.map(v => BoardHeightChanged(v.toInt)) -->
-            ExApp.catsRunObserver(handler)
+            PiecePicker.catsRunObserver(handler)
         )
       ),
       button(

@@ -18,7 +18,6 @@ object ExAppModel {
   type EvHandler = Ev => IO[Unit]
 
   case class State(
-      dm: Dragging.DraggingModule[DraggingId],
       draggingPieceState: Var[Option[DraggingPieceState]],
       boardContainerRef: Var[Option[dom.Element]],
       boardSize: Var[Vec2d],
@@ -28,7 +27,6 @@ object ExAppModel {
   )
   object State {
     def init = State(
-      dm = Dragging.createModule[DraggingId](),
       draggingPieceState = Var(None),
       boardContainerRef = Var(None),
       boardSize = Var(Vec2d(6, 6)),

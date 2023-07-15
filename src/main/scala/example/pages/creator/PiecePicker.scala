@@ -7,20 +7,25 @@ import chessboardcore.Vec2d
 import com.raquo.laminar.api.L._
 import example.Misc
 import org.scalajs.dom
+import example.AppModel
 
 //TODO: bg-stone-800 should be dried
 
-//TODO: this should be named PiecePicker?
-object ExApp {
+object PiecePickerModel {
+  case class Data(dm: AppModel.DM)
+}
+
+object PiecePicker {
   import ExAppModel._
   import example.AppModel._
+  import PiecePickerModel._
 
-  def component(state: State, handler: Ev => IO[Unit]) = {
+  def component(data: Data, handler: Ev => IO[Unit]) = {
     val pieceKinds: List[PieceKind] =
       List(Pawn, Rook, Knight, Bishop, Queen, King)
     val pieceSize = Vec2d(100, 100)
     val _pieceComponent =
-      (p: Piece) => pieceComponent(state.dm, pieceSize, p, handler)
+      (p: Piece) => pieceComponent(data.dm, pieceSize, p, handler)
     val piecesContainerByColor =
       (c: PieceColor) => piecesContainer(c, pieceKinds, _pieceComponent)
 

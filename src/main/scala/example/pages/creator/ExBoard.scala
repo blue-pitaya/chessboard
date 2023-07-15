@@ -15,20 +15,12 @@ object BoardModel {
   type BoardSize = Vec2d
   type BoardPos = Vec2d
 
-  case class Signals(
+  case class Data(
       canvasSize: Vec2d,
       boardSize: Signal[Vec2d],
       placedPieces: Signal[PlacedPieces],
       dm: DM
   )
-  object Signals {
-    def fromCreatorPageState(s: State): Signals = Signals(
-      canvasSize = s.canvasSize,
-      boardSize = s.boardSize.signal,
-      placedPieces = s.placedPieces.signal,
-      dm = s.dm
-    )
-  }
 
   sealed trait Event
   case class ElementRefChanged(v: dom.Element) extends Event
@@ -39,8 +31,8 @@ object ExBoard {
   import ExAppModel._
   import BoardModel._
 
-  def component(signals: Signals, handler: Event => IO[Unit]): Element = {
-    val canvasSize = signals.canvasSize
+  def component(data: Data, handler: Event => IO[Unit]): Element = {
+    val canvasSize = data.canvasSize
 
     val _tileSize = (bs: BoardSize) => tileSize(bs, canvasSize)
     val _tileCanvasPos =
@@ -52,13 +44,13 @@ object ExBoard {
       }
     val _tileComponents =
       (bs: BoardSize) => tileComponents(_tileComponent(bs), bs)
-    val _tilesSignal = tilesSignal(_tileComponents, signals.boardSize)
+    val _tilesSignal = tilesSignal(_tileComponents, data.boardSize)
     val _placedPieceDraggingBindings =
-      (pos: BoardPos) => placedPieceDraggingBindings(pos, signals.dm, handler)
+      (pos: BoardPos) => placedPieceDraggingBindings(pos, data.dm, handler)
 
     val _placedPiecesSignal = placedPiecesSignal(
-      signals.boardSize,
-      signals.placedPieces,
+      data.boardSize,
+      data.placedPieces,
       _tileSize,
       _tileCanvasPos,
       _placedPieceDraggingBindings
@@ -85,7 +77,7 @@ object ExBoard {
     dm.componentBindings(draggingId) ++
       Seq(
         dm.componentEvents(draggingId).map(e => PieceDragging(e, fromPos)) -->
-          ExApp.catsRunObserver(handler)
+          PiecePicker.catsRunObserver(handler)
       )
   }
 
