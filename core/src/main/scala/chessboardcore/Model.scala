@@ -31,4 +31,6 @@ object Model {
   object Players {
     def init = Players(white = PlayerState.Empty, black = PlayerState.Empty)
   }
+
+  case class Game(board: Board, timeSettings: TimeSettings, players: Players)
 }

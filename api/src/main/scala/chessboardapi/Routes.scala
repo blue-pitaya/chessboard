@@ -12,20 +12,18 @@ import org.http4s.dsl.Http4sDsl
 object Routes {
 
   def chessboardRoutes(
-      stateRefIo: IO[Ref[IO, ChessboardRepository.State]]
+      stateRef: Ref[IO, ChessboardRepository.State]
   ): HttpRoutes[IO] = {
     val dsl = new Http4sDsl[IO] {}
     import dsl._
     HttpRoutes.of[IO] {
       case req @ PUT -> Root / "chessboard" => for {
           data <- req.as[CreateChessboard_In]
-          stateRef <- stateRefIo
           _ <- ChessboardRepository.append(stateRef, data)
           resp <- Ok()
         } yield (resp)
 
       case GET -> Root / "chessboard" => for {
-          stateRef <- stateRefIo
           entries <- ChessboardRepository.list(stateRef)
           resp <- Ok(entries)
         } yield (resp)
@@ -33,19 +31,24 @@ object Routes {
     }
   }
 
-  def gameRoutes(
-      stateRefIo: IO[Ref[IO, GameServiceModel.State]]
-  ): HttpRoutes[IO] = {
+  def gameRoutes(stateRef: Ref[IO, GameServiceModel.State]): HttpRoutes[IO] = {
     val dsl = new Http4sDsl[IO] {}
     import dsl._
-    HttpRoutes.of[IO] { case req @ PUT -> Root / "game" =>
-      for {
-        data <- req.as[CreateGame_In]
-        board = data.board
-        stateRef <- stateRefIo
-        gameId <- GameService.create(stateRef, board)
-        resp <- Ok(gameId)
-      } yield (resp)
+    HttpRoutes.of[IO] {
+      case req @ PUT -> Root / "game" => for {
+          data <- req.as[CreateGame_In]
+          board = data.board
+          gameId <- GameService.create(stateRef, board)
+          resp <- Ok(gameId)
+        } yield (resp)
+
+      case GET -> Root / "game" / gameId => for {
+          entryOpt <- GameService.get(stateRef, gameId)
+          resp <- entryOpt match {
+            case None        => NotFound()
+            case Some(entry) => Ok(entry.game)
+          }
+        } yield (resp)
     }
   }
 

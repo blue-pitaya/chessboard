@@ -13,12 +13,7 @@ object GameServiceModel {
     def init = State(entries = List())
   }
 
-  case class Entry(
-      id: String,
-      board: Board,
-      timeSettings: TimeSettings,
-      players: Players
-  )
+  case class Entry(id: String, game: Game)
 
   sealed trait Result
   object Result {
@@ -44,8 +39,9 @@ object GameService {
   def createEntry(id: String, board: Board): Entry = {
     val timeSettings = TimeSettings(timePerPlayerInSec = 3 * 60)
     val players = Players.init
+    val game = Game(board, timeSettings, players)
 
-    Entry(id, board, timeSettings, players)
+    Entry(id, game)
   }
 
   def createId(): IO[String] = IO(
