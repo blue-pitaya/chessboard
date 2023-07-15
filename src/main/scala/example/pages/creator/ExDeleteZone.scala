@@ -1,7 +1,8 @@
 package example.pages.creator
 
-import com.raquo.laminar.api.L._
 import cats.effect.IO
+import com.raquo.laminar.api.L._
+import example.Utils
 
 object ExDeleteZone {
   import ExAppModel._
@@ -21,7 +22,7 @@ object ExDeleteZone {
       ctx: MountContext[Element],
       handler: Ev => IO[Unit]
   ): Unit = {
-    ExBoard.catsRun(handler)(RemoveZoneRefChanged(ctx.thisNode.ref))
+    Utils.catsRun(handler)(RemoveZoneRefChanged(ctx.thisNode.ref))
   }
 
 }

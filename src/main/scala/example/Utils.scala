@@ -1,6 +1,9 @@
 package example
 
 import chessboardcore.Vec2d
+import cats.effect.IO
+import org.scalajs.dom
+import cats.effect.unsafe.implicits.global
 
 object Utils {
   def takeWhileInclusive[A](
@@ -45,4 +48,13 @@ object Utils {
     pos.x / getTileSize(logicSize, renderSizeInPx).x,
     (renderSizeInPx.y - pos.y) / getTileSize(logicSize, renderSizeInPx).y
   )
+
+  def catsRun[A](f: A => IO[Unit]): A => Unit = { e =>
+    f(e).unsafeRunAsync { cb =>
+      cb match {
+        case Left(err)    => dom.console.error(err.toString())
+        case Right(value) => ()
+      }
+    }
+  }
 }

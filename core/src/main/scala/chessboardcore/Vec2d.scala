@@ -18,4 +18,13 @@ object Vec2d {
   def matrix(from: Vec2d, to: Vec2d): List[Vec2d] = (from.x to to.x)
     .flatMap(x => (from.y to to.y).map(y => Vec2d(x, y)))
     .toList
+
+  def matrix(size: Vec2d): List[Vec2d] = (0 until size.x)
+    .map { x =>
+      (0 until size.y).map { y =>
+        Vec2d(x, y)
+      }
+    }
+    .toList
+    .flatten
 }

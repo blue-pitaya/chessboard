@@ -21,6 +21,7 @@ import org.http4s.implicits._
 import org.scalajs.dom
 import example.AppRouter
 import example.PageKey
+import example.Misc
 
 object EvHandler {
   import ExAppModel._
@@ -73,11 +74,8 @@ object EvHandler {
       .now()
       .toList
       .collect {
-        case (pos, coloredPiece) if ExBoard.isPosOnBoard(pos, boardSize) =>
-          PlacedPiece(
-            pos = pos,
-            piece = Piece(coloredPiece.color, coloredPiece.piece)
-          )
+        case (pos, pieceUiModel) if ExBoard.isPosOnBoard(pos, boardSize) =>
+          PlacedPiece(pos = pos, piece = pieceUiModel.piece)
       }
 
     Board(size = boardSize, pieces = piecesOnBoard)
@@ -89,11 +87,8 @@ object EvHandler {
       .placedPieces
       .now()
       .toList
-      .map { case (pos, coloredPiece) =>
-        PlacedPiece(
-          pos = pos,
-          piece = Piece(color = coloredPiece.color, kind = coloredPiece.piece)
-        )
+      .map { case (pos, pieceUiModel) =>
+        PlacedPiece(pos = pos, piece = pieceUiModel.piece)
       }
     val data = HttpModel
       .CreateChessboard_In(boardSize = boardSize, pieces = pieces)
@@ -117,28 +112,25 @@ object EvHandler {
   }
 
   def handlePieceDragging(
-      piece: ColoredPiece,
+      pieceUiModel: PieceOnBoard,
       state: State,
       event: PlacedPieceDragging
   ): IO[Unit] = event.e.kind match {
     case Start => for {
-        _ <- IO(piece.isVisible.set(false))
+        _ <- IO(pieceUiModel.isVisible.set(false))
         _ <- handlePieceDragging(
           state,
           event.e,
-          ExApp.pieceImgPath(piece.color, piece.piece)
+          Misc.pieceImgPath(pieceUiModel.piece)
         )
       } yield ()
-    case Move => handlePieceDragging(
-        state,
-        event.e,
-        ExApp.pieceImgPath(piece.color, piece.piece)
-      )
-    case End => onEndPlacedPieceDragging(piece, state, event)
+    case Move =>
+      handlePieceDragging(state, event.e, Misc.pieceImgPath(pieceUiModel.piece))
+    case End => onEndPlacedPieceDragging(pieceUiModel, state, event)
   }
 
   def onEndPlacedPieceDragging(
-      piece: ColoredPiece,
+      piece: PieceOnBoard,
       state: State,
       event: PlacedPieceDragging
   ): IO[Unit] = {
@@ -172,16 +164,16 @@ object EvHandler {
       state: State,
       fromPos: Vec2d,
       toPos: Vec2d,
-      piece: ColoredPiece
+      pieceUiModel: PieceOnBoard
   ): IO[Unit] = for {
     _ <- removePiece(fromPos, state)
-    _ <- placePiece(toPos, piece.color, piece.piece, state)
+    _ <- placePiece(toPos, pieceUiModel.piece, state)
   } yield ()
 
   def removePiece(pos: Vec2d, state: State): IO[Unit] =
     IO(state.placedPieces.update(v => v.removed(pos)))
 
-  def placedPieceOnPos(pos: Vec2d, state: State): OptionT[IO, ColoredPiece] =
+  def placedPieceOnPos(pos: Vec2d, state: State): OptionT[IO, PieceOnBoard] =
     for {
       placedPieces <- OptionT.liftF(IO(state.placedPieces.now()))
       pieceOnPos <- OptionT.fromOption[IO](placedPieces.get(pos))
@@ -201,20 +193,15 @@ object EvHandler {
       for {
         _ <- OptionT.liftF(IO(state.draggingPieceState.set(None)))
         tilePos <- tileLogicPos(state, e.e)
-        _ <- OptionT.liftF(placePiece(tilePos, e.color, e.piece, state))
+        _ <- OptionT.liftF(placePiece(tilePos, e.piece, state))
       } yield ()
     ).getOrElse(())
   }
 
-  def placePiece(
-      pos: Vec2d,
-      color: FigColor,
-      piece: Fig,
-      state: State
-  ): IO[Unit] = IO {
+  def placePiece(pos: Vec2d, piece: Piece, state: State): IO[Unit] = IO {
     state
       .placedPieces
-      .update(v => v.updated(pos, ColoredPiece(color, piece, Var(true))))
+      .update(v => v.updated(pos, PieceOnBoard(piece, Var(true))))
   }
 
   def tileLogicPos(
@@ -267,7 +254,7 @@ object EvHandler {
   }
 
   def onStart(state: State, e: PickerPieceDragging): IO[Unit] = {
-    val imgPath = ExApp.pieceImgPath(e.color, e.piece)
+    val imgPath = Misc.pieceImgPath(e.piece)
     handlePieceDragging(state, e.e, imgPath)
   }
 

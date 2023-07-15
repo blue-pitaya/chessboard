@@ -2,6 +2,7 @@ package example.pages.creator
 
 import cats.effect.IO
 import com.raquo.laminar.api.L._
+import example.Utils
 
 object ExBoardForm {
   import ExAppModel._
@@ -54,7 +55,7 @@ object ExBoardForm {
       handler: Ev => IO[Unit],
       mapFn: A => Ev
   ): Observer[A] = Observer[A] { v =>
-    ExBoard.catsRun(handler)(mapFn(v))
+    Utils.catsRun(handler)(mapFn(v))
   }
 
   private val ButtonCls =

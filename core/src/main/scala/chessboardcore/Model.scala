@@ -1,19 +1,19 @@
 package chessboardcore
 
 object Model {
-  sealed trait Fig
-  case object Pawn extends Fig
-  case object Rook extends Fig
-  case object Knight extends Fig
-  case object Bishop extends Fig
-  case object Queen extends Fig
-  case object King extends Fig
+  sealed trait PieceKind
+  case object Pawn extends PieceKind
+  case object Rook extends PieceKind
+  case object Knight extends PieceKind
+  case object Bishop extends PieceKind
+  case object Queen extends PieceKind
+  case object King extends PieceKind
 
-  sealed trait FigColor
-  case object White extends FigColor
-  case object Black extends FigColor
+  sealed trait PieceColor
+  case object White extends PieceColor
+  case object Black extends PieceColor
 
-  case class Piece(color: FigColor, kind: Fig)
+  case class Piece(color: PieceColor, kind: PieceKind)
 
   case class PlacedPiece(pos: Vec2d, piece: Piece)
 
@@ -32,5 +32,9 @@ object Model {
     def init = Players(white = PlayerState.Empty, black = PlayerState.Empty)
   }
 
-  case class Game(board: Board, timeSettings: TimeSettings, players: Players)
+  case class GameInfo(
+      board: Board,
+      timeSettings: TimeSettings,
+      players: Players
+  )
 }

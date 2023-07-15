@@ -1,20 +1,47 @@
 package example.pages.creator
 
 import cats.effect.IO
-import cats.effect.unsafe.implicits.global
+import chessboardcore.Vec2d
 import com.raquo.laminar.api.L._
 import org.scalajs.dom
-import chessboardcore.Vec2d
+import example.Utils
+import dev.bluepitaya.laminardragging.Dragging
+import example.Misc
 
-object ExBoard {
+object BoardModel {
   import ExAppModel._
   import ExApp.DM
 
   type BoardSize = Vec2d
   type BoardPos = Vec2d
 
-  def component(state: State, handler: Ev => IO[Unit]): Element = {
-    val canvasSize = state.canvasSize
+  case class Signals(
+      canvasSize: Vec2d,
+      boardSize: Signal[Vec2d],
+      placedPieces: Signal[PlacedPieces],
+      dm: DM[PieceDraggingId]
+  )
+  object Signals {
+    def fromCreatorPageState(s: State): Signals = Signals(
+      canvasSize = s.canvasSize,
+      boardSize = s.boardSize.signal,
+      placedPieces = s.placedPieces.signal,
+      dm = s.dm
+    )
+  }
+
+  sealed trait Event
+  case class ElementRefChanged(v: dom.Element) extends Event
+  case class PieceDragging(e: Dragging.Event, fromPos: Vec2d) extends Event
+}
+
+object ExBoard {
+  import ExAppModel._
+  import ExApp.DM
+  import BoardModel._
+
+  def component(signals: Signals, handler: Event => IO[Unit]): Element = {
+    val canvasSize = signals.canvasSize
 
     val _tileSize = (bs: BoardSize) => tileSize(bs, canvasSize)
     val _tileCanvasPos =
@@ -26,13 +53,13 @@ object ExBoard {
       }
     val _tileComponents =
       (bs: BoardSize) => tileComponents(_tileComponent(bs), bs)
-    val _tilesSignal = tilesSignal(_tileComponents, state.boardSize.signal)
+    val _tilesSignal = tilesSignal(_tileComponents, signals.boardSize)
     val _placedPieceDraggingBindings =
-      (pos: BoardPos) => placedPieceDraggingBindings(pos, state.dm, handler)
+      (pos: BoardPos) => placedPieceDraggingBindings(pos, signals.dm, handler)
 
     val _placedPiecesSignal = placedPiecesSignal(
-      state.boardSize.signal,
-      state.placedPieces.signal,
+      signals.boardSize,
+      signals.placedPieces,
       _tileSize,
       _tileCanvasPos,
       _placedPieceDraggingBindings
@@ -44,20 +71,21 @@ object ExBoard {
       svg.cls("min-w-[800px] h-[800px] bg-stone-800"),
       svg.g(children <-- _tilesSignal),
       svg.g(children <-- _placedPiecesSignal),
-      onMountCallback(onMountCallBkEffect(_, handler))
+      onMountCallback(ctx =>
+        Utils.catsRun(handler)(ElementRefChanged(ctx.thisNode.ref))
+      )
     )
   }
 
   def placedPieceDraggingBindings(
       fromPos: Vec2d,
       dm: DM[PieceDraggingId],
-      handler: Ev => IO[Unit]
+      handler: Event => IO[Unit]
   ): Seq[Binder.Base] = {
     val draggingId = PlacedPieceDraggingId(fromPos)
     dm.componentBindings(draggingId) ++
       Seq(
-        dm.componentEvents(draggingId)
-          .map(e => PlacedPieceDragging(e, fromPos)) -->
+        dm.componentEvents(draggingId).map(e => PieceDragging(e, fromPos)) -->
           ExApp.catsRunObserver(handler)
       )
   }
@@ -72,15 +100,16 @@ object ExBoard {
     placedPiecesSignal
       .combineWith(boardSizeSignal)
       .map { case (placedPieces, boardSize) =>
-        placedPiecesOnBoard(placedPieces, boardSize).map { case (pos, piece) =>
-          val imgPath = ExApp.pieceImgPath(piece.color, piece.piece)
-          placedPieceComponent(
-            canvasPos(boardSize)(pos),
-            tileSize(boardSize),
-            imgPath,
-            piece.isVisible.signal,
-            draggingBindings(pos)
-          )
+        placedPiecesOnBoard(placedPieces, boardSize).map {
+          case (pos, pieceUiModel) =>
+            val imgPath = Misc.pieceImgPath(pieceUiModel.piece)
+            placedPieceComponent(
+              canvasPos(boardSize)(pos),
+              tileSize(boardSize),
+              imgPath,
+              pieceUiModel.isVisible.signal,
+              draggingBindings(pos)
+            )
         }
       }
   }
@@ -88,7 +117,7 @@ object ExBoard {
   def placedPiecesOnBoard(
       placedPieces: PlacedPieces,
       boardSize: Vec2d
-  ): List[(Vec2d, ColoredPiece)] = {
+  ): List[(Vec2d, PieceOnBoard)] = {
     placedPieces
       .toList
       .collect {
@@ -134,18 +163,9 @@ object ExBoard {
       tileComponent: Vec2d => Element,
       boardSize: Vec2d
   ): List[Element] = {
-    val tileLogicPositions = vec2dMatrix(boardSize)
+    val tileLogicPositions = Vec2d.matrix(boardSize)
     tileLogicPositions.map(tileComponent)
   }
-
-  def vec2dMatrix(size: Vec2d): List[Vec2d] = (0 until size.x)
-    .map { x =>
-      (0 until size.y).map { y =>
-        Vec2d(x, y)
-      }
-    }
-    .toList
-    .flatten
 
   def tileComponent(
       tileCanvasPos: Vec2d => Vec2d,
@@ -193,17 +213,4 @@ object ExBoard {
     else whiteTileColor
   }
 
-  def onMountCallBkEffect(
-      ctx: MountContext[Element],
-      handler: Ev => IO[Unit]
-  ): Unit = catsRun(handler)(BoardContainerRefChanged(ctx.thisNode.ref))
-
-  def catsRun[A](f: A => IO[Unit]): A => Unit = { e =>
-    f(e).unsafeRunAsync { cb =>
-      cb match {
-        case Left(err)    => dom.console.error(err.toString())
-        case Right(value) => ()
-      }
-    }
-  }
 }
