@@ -11,22 +11,21 @@ import dev.bluepitaya.laminardragging.DragEventKind.Move
 import dev.bluepitaya.laminardragging.DragEventKind.Start
 import dev.bluepitaya.laminardragging.Dragging
 import dev.bluepitaya.laminardragging.Vec2f
+import example.AppModel
+import example.AppRouter
 import example.Main
+import example.Misc
+import example.PageKey
 import io.circe.generic.auto._
 import io.circe.syntax._
 import org.http4s._
 import org.http4s.circe._
 import org.http4s.client.Client
-import org.http4s.implicits._
 import org.scalajs.dom
-import example.AppRouter
-import example.PageKey
-import example.Misc
 
 object EvHandler {
   import ExAppModel._
-
-  val ApiPath = uri"http://localhost:8080/"
+  import BoardModel._
 
   def handle(state: State, event: Ev): IO[Unit] = {
     event match {
@@ -54,7 +53,7 @@ object EvHandler {
   }
 
   def createGame(state: State, httpClient: Client[IO]): IO[Unit] = {
-    val uri = ApiPath / "game"
+    val uri = AppModel.ApiPath / "game"
     val data = HttpModel.CreateGame_In(board(state))
     val request = Request[IO](Method.PUT, uri).withEntity(data.asJson)
 
@@ -92,7 +91,7 @@ object EvHandler {
       }
     val data = HttpModel
       .CreateChessboard_In(boardSize = boardSize, pieces = pieces)
-    val uri = ApiPath / "chessboard"
+    val uri = AppModel.ApiPath / "chessboard"
     val request = Request[IO](Method.PUT, uri).withEntity(data.asJson)
 
     httpClient.expect[Unit](request)

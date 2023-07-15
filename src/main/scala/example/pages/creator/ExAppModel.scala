@@ -5,24 +5,17 @@ import dev.bluepitaya.laminardragging.Dragging
 import org.scalajs.dom
 import chessboardcore.Vec2d
 import chessboardcore.Model._
-import cats.effect.IO
 import example.AppModel._
 
 object ExAppModel {
   case class DraggingPieceState(imgPath: String, draggingEvent: Dragging.Event)
-
-  // TODO: this should go to board component
-  case class PieceUiModel(piece: Piece, isVisible: Var[Boolean])
-
-  type PlacedPieces = Map[Vec2d, PieceUiModel]
-  type EvHandler = Ev => IO[Unit]
 
   case class State(
       draggingPieceState: Var[Option[DraggingPieceState]],
       boardContainerRef: Var[Option[dom.Element]],
       boardSize: Var[Vec2d],
       canvasSize: Vec2d,
-      placedPieces: Var[PlacedPieces],
+      placedPieces: Var[Map[Vec2d, BoardModel.PieceUiModel]],
       removeZoneComponentRef: Var[Option[dom.Element]]
   )
   object State {

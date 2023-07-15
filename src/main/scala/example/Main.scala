@@ -13,6 +13,12 @@ import example.pages.game.GamePage
 object Main extends App {
   val client: Client[IO] = FetchClientBuilder[IO].create
   val appState = AppModel.AppState.init
+  val httpClient = new HttpClient(client)
+
+  // TODO:
+  private def createApp() = {
+    ???
+  }
 
   def splitRenderer =
     SplitRender[PageKey, Element](AppRouter.router.currentPageSignal)
@@ -22,7 +28,9 @@ object Main extends App {
       .collectStatic(PageKey.BoardCreator) {
         CreatorPage.component(appState.dm)
       }
-      .collect[PageKey.Game](key => GamePage.component(key.id))
+      .collect[PageKey.Game](key =>
+        GamePage.component(key.id, appState.dm, httpClient.fetchGameInfo)
+      )
 
   def containerNode = dom.document.querySelector("#app")
   val app = div(child <-- splitRenderer.signal, appState.dm.documentBindings)

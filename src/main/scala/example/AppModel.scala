@@ -2,9 +2,12 @@ package example
 
 import chessboardcore.Vec2d
 import dev.bluepitaya.laminardragging.Dragging
+import org.http4s.implicits._
 
 object AppModel {
   val DefaultBoardCanvasSize = Vec2d(800, 800)
+  // TODO: remove from here
+  val ApiPath = uri"http://localhost:8080/"
 
   import chessboardcore.Model._
 

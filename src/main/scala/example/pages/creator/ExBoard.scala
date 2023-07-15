@@ -8,17 +8,18 @@ import example.Utils
 import dev.bluepitaya.laminardragging.Dragging
 import example.Misc
 import example.AppModel._
+import chessboardcore.Model
 
 object BoardModel {
-  import ExAppModel._
-
   type BoardSize = Vec2d
   type BoardPos = Vec2d
+
+  case class PieceUiModel(piece: Model.Piece, isVisible: Var[Boolean])
 
   case class Data(
       canvasSize: Vec2d,
       boardSize: Signal[Vec2d],
-      placedPieces: Signal[PlacedPieces],
+      placedPieces: Signal[Map[Vec2d, PieceUiModel]],
       dm: DM
   )
 
@@ -28,7 +29,6 @@ object BoardModel {
 }
 
 object ExBoard {
-  import ExAppModel._
   import BoardModel._
 
   def component(data: Data, handler: Event => IO[Unit]): Element = {
@@ -83,7 +83,7 @@ object ExBoard {
 
   def placedPiecesSignal(
       boardSizeSignal: Signal[Vec2d],
-      placedPiecesSignal: Signal[PlacedPieces],
+      placedPiecesSignal: Signal[Map[Vec2d, PieceUiModel]],
       tileSize: BoardSize => Int,
       canvasPos: BoardSize => BoardPos => Vec2d,
       draggingBindings: BoardPos => Seq[Binder.Base]
@@ -106,7 +106,7 @@ object ExBoard {
   }
 
   def placedPiecesOnBoard(
-      placedPieces: PlacedPieces,
+      placedPieces: Map[Vec2d, PieceUiModel],
       boardSize: Vec2d
   ): List[(Vec2d, PieceUiModel)] = {
     placedPieces

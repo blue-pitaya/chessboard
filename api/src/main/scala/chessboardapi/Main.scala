@@ -14,7 +14,7 @@ object Main extends IOApp.Simple {
   def initState(): IO[GlobalState] = for {
     boardStateRef <- ChessboardRepository.createState()
     gameServiceStateRef <- Ref
-      .of[IO, GameServiceModel.State](GameServiceModel.State.init)
+      .of[IO, GameServiceModel.State](GameServiceModel.State.initDebug)
     globalState = GlobalState(boardStateRef, gameServiceStateRef)
   } yield (globalState)
 
