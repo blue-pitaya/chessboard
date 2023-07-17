@@ -17,8 +17,7 @@ object Server {
 
     val finalHttpApp = (ws: WebSocketBuilder2[IO]) => {
       val boardRoutes = Routes.chessboardRoutes(state.boardStateRef)
-      val gameRoutes = Routes
-        .gameRoutes(state.gameServiceStateRef, state.state2Ref, ws)
+      val gameRoutes = Routes.gameRoutes(state.gameServiceStateRef, ws)
       val routes = boardRoutes <+> gameRoutes
       // FIXME: unsafe CORS rule
       val corsService = CORS.policy.withAllowOriginAll(routes).orNotFound

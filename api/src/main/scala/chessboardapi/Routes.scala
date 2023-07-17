@@ -33,8 +33,7 @@ object Routes {
   }
 
   def gameRoutes(
-      stateRef: Ref[IO, GameServiceModel.State],
-      state2Ref: Ref[IO, GameServiceModel.State2],
+      state2Ref: Ref[IO, GameServiceModel.State],
       ws: WebSocketBuilder2[IO]
   ): HttpRoutes[IO] = {
     val GamePart = "game"
@@ -45,16 +44,8 @@ object Routes {
       case req @ PUT -> Root / GamePart => for {
           data <- req.as[CreateGame_In]
           board = data.board
-          gameId <- GameService.create(stateRef, board)
+          gameId <- GameService.create(state2Ref, board)
           resp <- Ok(CreateGame_Out(gameId))
-        } yield (resp)
-
-      case GET -> Root / GamePart / gameId => for {
-          entryOpt <- GameService.get(stateRef, gameId)
-          resp <- entryOpt match {
-            case None    => NotFound()
-            case Some(v) => Ok(v.game)
-          }
         } yield (resp)
 
       case _ -> Root / GamePart / gameId / "ws" => for {
@@ -62,37 +53,4 @@ object Routes {
         } yield (resp)
     }
   }
-
-  // def joinGameRoom(
-  //    authToken: String,
-  //    gameId: String,
-  //    stateRef: Ref[IO, GameServiceModel.State]
-  // )(implicit dsl: Http4sDsl[IO]): IO[Response[IO]] = {
-  //  import dsl._
-
-  //  for {
-  //    gameInfoOpt <- GameService.join(gameId, authToken, stateRef)
-  //    resp <- gameInfoOpt match {
-  //      case None    => NotFound()
-  //      case Some(v) => Ok(v)
-  //    }
-  //  } yield (resp)
-  // }
-
-  // TODO: https://http4s.org/v0.23/docs/auth.html
-  // def authorize[A](req: Request[IO], f: String => IO[Response[IO]])(implicit
-  //    dsl: Http4sDsl[IO]
-  // ): IO[Response[IO]] = {
-  //  import dsl._
-
-  //  for {
-  //    authTokenHeaderOpt <- IO.pure(req.headers.get(ci"X-Auth-Token"))
-  //    resp <- authTokenHeaderOpt match {
-  //      case None => Forbidden()
-  //      case Some(authHeaders) =>
-  //        val token = authHeaders.head.value
-  //        f(token)
-  //    }
-  //  } yield (resp)
-  // }
 }

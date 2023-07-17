@@ -10,11 +10,13 @@ import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.websocket.WebSocketFrame
 import io.circe.parser
 
-//give me akka actor vibes ( ͠° ͟ʖ ͡°)
 object TrueGameService {
   case class State(board: Board)
 
   private def initialState = State(Examples.board)
+
+  private def createState(board: Board): IO[Ref[IO, State]] = Ref
+    .of[IO, State](State(board))
 
   case class Module(subsrice: WebSocketBuilder2[IO] => IO[Response[IO]])
 
@@ -38,9 +40,9 @@ object TrueGameService {
     IO.pure(WebSocketFrame.Text(json))
   }
 
-  def create(): IO[Module] = {
+  def create(board: Board): IO[Module] = {
     for {
-      stateRef <- Ref.of[IO, State](initialState)
+      stateRef <- createState(board)
       _handle = (e: WsEv) => handle(e, stateRef)
       x <- WebSockerBroadcaster.create(decode, _handle, encode)
       s = (ws: WebSocketBuilder2[IO]) => {
@@ -48,26 +50,4 @@ object TrueGameService {
       }
     } yield (Module(s))
   }
-
-  // case class State(
-  //    info: GameInfo,
-  //    whitePlayer: PlayerState,
-  //    blackPlayer: PlayerState
-  // )
-  //
-  // def initialState: State = State(
-  //  info = GameInfo(
-  //    board = Board(
-  //      Vec2d(6, 6),
-  //      List(
-  //        PlacedPiece(pos = Vec2d(0, 0), piece = Piece(White, King)),
-  //        PlacedPiece(pos = Vec2d(5, 5), piece = Piece(Black, King))
-  //      )
-  //    ),
-  //    timeSettings = TimeSettings(180),
-  //    players = Players.init
-  //  ),
-  //  whitePlayer = PlayerState.Empty,
-  //  blackPlayer = PlayerState.Empty
-  // )
 }

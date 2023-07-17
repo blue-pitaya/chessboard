@@ -6,26 +6,22 @@ import cats.effect.kernel.Ref
 
 case class GlobalState(
     boardStateRef: Ref[IO, ChessboardRepository.State],
-    gameServiceStateRef: Ref[IO, GameServiceModel.State],
-    state2Ref: Ref[IO, GameServiceModel.State2]
+    gameServiceStateRef: Ref[IO, GameServiceModel.State]
 )
 
 object Main extends IOApp.Simple {
 
   def initState(): IO[GlobalState] = for {
-    boardStateRef <- ChessboardRepository.createState()
-    gameServiceStateRef <- Ref
-      .of[IO, GameServiceModel.State](GameServiceModel.State.initDebug)
-    state2Ref <- Ref
-      .of[IO, GameServiceModel.State2](GameServiceModel.State2(Map()))
-    globalState = GlobalState(boardStateRef, gameServiceStateRef, state2Ref)
+    bsRef <- ChessboardRepository.createState()
+    gssRef <- GameService.createState()
+    globalState = GlobalState(bsRef, gssRef)
   } yield (globalState)
 
   override def run: IO[Unit] = debugRun()
 
   private def debugRun(): IO[Unit] = for {
     globalState <- initState()
-    _ <- GameService.createExample(globalState.state2Ref)
+    _ <- GameService.createExample(globalState.gameServiceStateRef)
     _ <- Server
       .create(globalState)
       .use { _ =>
