@@ -14,48 +14,56 @@ import io.circe.generic.auto._
 
 object GamePage2 {
   sealed trait Event
-  case class PingClicked() extends Event
-  case class LoadBoard() extends Event
+  case class RequestGameState() extends Event
 
-  case class State(board: Var[Board])
+  case class State(gameState: Var[GameState])
 
-  private def initialState = State(Var(Board.empty))
+  private def createState() = State(Var(GameState.empty))
 
   def component(gameId: String, dm: AppModel.DM): Element = {
-    val state = initialState
+    val state = createState()
     val bus = new EventBus[Event]
+    val plSectionBus = new EventBus[PlayersSection.Event]
     val ws: WebSocket[WsEv, WsEv] = WebSocket
       .url(HttpClient.gameWebSockerUrl(gameId))
       .json[WsEv, WsEv]
       .build()
 
     div(
+      cls("flex flex-row gap-4 m-4"),
       boardComponent(state, dm),
+      playersSectionComponent(state, plSectionBus.writer),
       ws.connect,
-      onMountCallback(ctx => onMounted(bus, ctx.owner, ws, state))
+      onMountCallback { ctx =>
+        GameLogic
+          .wireGamePage2(bus.events, plSectionBus.events, state, ws)(ctx.owner)
+        bus.emit(RequestGameState())
+      }
     )
-  }
-
-  private def onMounted(
-      bus: EventBus[Event],
-      owner: Owner,
-      ws: WebSocket[WsEv, WsEv],
-      state: State
-  ): Unit = {
-    GameLogic.wireGamePage2(bus.events, state, ws)(owner)
-    bus.emit(LoadBoard())
   }
 
   private def boardComponent(state: State, dm: AppModel.DM): Element = {
     val handler = (event: BoardModel.Event) => IO.unit
-    val boardData: BoardModel.Data = BoardModel.Data(
+    val boardData = BoardModel.Data(
       canvasSize = AppModel.DefaultBoardCanvasSize,
-      boardSize = state.board.signal.map(_.size),
-      placedPieces = state.board.signal.map(pieces),
+      boardSize = state.gameState.signal.map(_.board.size),
+      placedPieces = state.gameState.signal.map(gs => pieces(gs.board)),
       dm = dm
     )
 
     ExBoard.component(boardData, handler)
+  }
+
+  private def playersSectionComponent(
+      state: State,
+      plSectionObs: Observer[PlayersSection.Event]
+  ): Element = {
+    val data = PlayersSection.Data(
+      state.gameState.signal.map(_.whitePlayerState),
+      state.gameState.signal.map(_.blackPlayerState)
+    )
+
+    PlayersSection.component(data, plSectionObs)
   }
 
   private def pieces(board: Board): Map[Vec2d, BoardModel.PieceUiModel] = {

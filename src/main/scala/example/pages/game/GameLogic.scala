@@ -10,20 +10,24 @@ object GameLogic {
 
   def wireGamePage2(
       events: EventStream[GamePage2.Event],
+      plSectionEvents: EventStream[PlayersSection.Event],
       state: GamePage2.State,
       ws: WebSocket[WsEv, WsEv]
   )(implicit owner: Owner): Unit = {
-    val _handleWsEvent = (e: WsEv) => handleWsEvent(e, state)
-    val _handleEvent = (e: GamePage2.Event) => handleEvent(e, state, ws.sendOne)
-    val eventObserver = Observer[GamePage2.Event](_handleEvent)
-
-    ws.received.addObserver(Observer[Model.WsEv](_handleWsEvent))
-    events.addObserver(eventObserver)
+    ws.received.addObserver(Observer[Model.WsEv](e => handleWsEvent(e, state)))
+    events.addObserver(
+      Observer[GamePage2.Event](e => handleEvent(e, state, ws.sendOne))
+    )
+    plSectionEvents.addObserver(
+      Observer[PlayersSection.Event](e =>
+        handlePlSectionEvent(e, state, ws.sendOne)
+      )
+    )
   }
 
   def handleWsEvent(e: WsEv, state: GamePage2.State): Unit = e match {
-    case WsEv(BoardData(v)) => state.board.set(v)
-    case _                  => ()
+    case WsEv(GameStateData(v)) => state.gameState.set(v)
+    case _                      => ()
   }
 
   def handleEvent(
@@ -31,7 +35,14 @@ object GameLogic {
       state: GamePage2.State,
       sendWsEvent: WsEv => Unit
   ): Unit = e match {
-    case GamePage2.PingClicked() => println(";)")
-    case GamePage2.LoadBoard()   => sendWsEvent(WsEv(Model.GetBoard()))
+    case GamePage2.RequestGameState() => sendWsEvent(WsEv(GetGameState()))
+  }
+
+  def handlePlSectionEvent(
+      e: PlayersSection.Event,
+      state: GamePage2.State,
+      sendWsEvent: WsEv => Unit
+  ): Unit = e match {
+    case PlayersSection.PlayerSit(color) => sendWsEvent(WsEv(PlayerSit(color)))
   }
 }

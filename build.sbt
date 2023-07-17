@@ -6,12 +6,15 @@ ThisBuild / scalaVersion := "2.13.8"
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / organization := "com.example"
 ThisBuild / organizationName := "example"
+Global / scalacOptions += "-Ymacro-annotations"
+Global / scalacOptions += "-Wunused:imports"
 
 val Http4sVersion = "0.23.20"
 val CirceVersion = "0.14.5"
 val MunitVersion = "0.7.29"
 val LogbackVersion = "1.4.8"
 val MunitCatsEffectVersion = "1.0.7"
+val MonocleVersion = "3.1.0"
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .withoutSuffixFor(JVMPlatform)
@@ -35,7 +38,6 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
 lazy val root = (project in file("."))
   .dependsOn(core.js)
   .settings(
-    scalacOptions := Seq("-Wunused:imports"),
     name := "chessboard",
     libraryDependencies += "com.raquo" %%% "laminar" % "16.0.0",
     libraryDependencies += "com.raquo" %%% "waypoint" % "7.0.0",
@@ -47,6 +49,11 @@ lazy val root = (project in file("."))
     libraryDependencies += "io.circe" %%% "circe-generic" % CirceVersion,
     libraryDependencies += "io.laminext" %%% "websocket" % "0.16.0",
     libraryDependencies += "io.laminext" %%% "websocket-circe" % "0.16.0",
+    libraryDependencies ++=
+      Seq(
+        "dev.optics" %%% "monocle-core" % MonocleVersion,
+        "dev.optics" %%% "monocle-macro" % MonocleVersion
+      ),
     libraryDependencies ++=
       Seq(
         "org.http4s" %%% "http4s-client" % Http4sVersion,
@@ -69,7 +76,6 @@ lazy val root = (project in file("."))
 lazy val api = (project in file("api"))
   .dependsOn(core.jvm)
   .settings(
-    scalacOptions := Seq("-Wunused:imports"),
     name := "chessboard-api",
     libraryDependencies ++=
       Seq(
@@ -81,7 +87,9 @@ lazy val api = (project in file("api"))
         "org.scalameta" %% "munit" % MunitVersion % Test,
         "org.typelevel" %% "munit-cats-effect-3" % MunitCatsEffectVersion %
           Test,
-        "ch.qos.logback" % "logback-classic" % LogbackVersion % Runtime
+        "ch.qos.logback" % "logback-classic" % LogbackVersion % Runtime,
         // "org.scalameta" %% "svm-subs" % "20.2.0"
+        "dev.optics" %%% "monocle-core" % MonocleVersion,
+        "dev.optics" %%% "monocle-macro" % MonocleVersion
       )
   )
