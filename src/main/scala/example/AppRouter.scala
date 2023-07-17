@@ -2,8 +2,8 @@ package example
 
 import com.raquo.laminar.api.L._
 import com.raquo.waypoint._
-import io.circe.Json
 import io.circe.generic.auto._
+import io.circe.parser
 import io.circe.syntax._
 import org.scalajs.dom
 
@@ -16,9 +16,8 @@ object PageKey {
 
   def serialized(key: PageKey): String = key.asJson.toString()
 
-  def deserialized(v: String): PageKey = Json
-    .fromString(v)
-    .as[PageKey]
+  def deserialized(v: String): PageKey = parser
+    .decode[PageKey](v)
     .getOrElse(NotFound)
 
   def pageTitle(key: PageKey): String = "Chessboard"

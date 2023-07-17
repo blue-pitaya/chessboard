@@ -46,7 +46,7 @@ object Routes {
           data <- req.as[CreateGame_In]
           board = data.board
           gameId <- GameService.create(stateRef, board)
-          resp <- Ok(gameId)
+          resp <- Ok(CreateGame_Out(gameId))
         } yield (resp)
 
       case GET -> Root / GamePart / gameId => for {

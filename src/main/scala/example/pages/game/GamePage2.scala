@@ -21,13 +21,16 @@ object GamePage2 {
 
   private def initialState = State(Var(Board.empty))
 
-  def component(): Element = {
+  def component(gameId: String, dm: AppModel.DM): Element = {
     val state = initialState
     val bus = new EventBus[Event]
-    val url = HttpClient.gameWebSockerUrl("abc")
-    val ws: WebSocket[WsEv, WsEv] = WebSocket.url(url).json[WsEv, WsEv].build()
+    val ws: WebSocket[WsEv, WsEv] = WebSocket
+      .url(HttpClient.gameWebSockerUrl(gameId))
+      .json[WsEv, WsEv]
+      .build()
 
     div(
+      boardComponent(state, dm),
       ws.connect,
       onMountCallback(ctx => onMounted(bus, ctx.owner, ws, state))
     )

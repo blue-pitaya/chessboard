@@ -62,6 +62,9 @@ object GameService {
     } yield ()
   }
 
+  sealed trait Fail extends Throwable
+  case class GameNotFound(id: String) extends Fail
+
   def join(
       gameId: String,
       stateRef: Ref[IO, State2],
@@ -69,8 +72,7 @@ object GameService {
   ): IO[Response[IO]] = {
     for {
       state <- stateRef.get
-      gameModule <- IO
-        .fromOption(state.games.get(gameId))(new Exception("game not found"))
+      gameModule <- IO.fromOption(state.games.get(gameId))(GameNotFound(gameId))
       resp <- gameModule.subsrice(ws)
     } yield (resp)
   }

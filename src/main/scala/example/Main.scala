@@ -29,11 +29,7 @@ object Main extends App {
         CreatorPage.component(appState.dm)
       }
       .collect[PageKey.Game] { key =>
-        // val _fetchGameInfo = httpClient.fetchGameInfo(key.id)
-        // val gameWebSocket = httpClient.gameWebSocket(key.id)
-        // GamePage.component(appState.dm, _fetchGameInfo, gameWebSocket)
-
-        GamePage2.component()
+        GamePage2.component(key.id, appState.dm)
       }
   }
 

@@ -19,6 +19,7 @@ import example.PageKey
 import io.circe.generic.auto._
 import io.circe.syntax._
 import org.http4s._
+import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.circe._
 import org.http4s.client.Client
 import org.scalajs.dom
@@ -58,8 +59,8 @@ object EvHandler {
     val request = Request[IO](Method.PUT, uri).withEntity(data.asJson)
 
     for {
-      newGameId <- httpClient.expect[String](request)
-      _ <- redirectToGame(newGameId)
+      resp <- httpClient.expect[HttpModel.CreateGame_Out](request)
+      _ <- redirectToGame(resp.id)
     } yield ()
   }
 

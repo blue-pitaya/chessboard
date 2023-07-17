@@ -1,11 +1,9 @@
 package example.pages.game
 
 import chessboardcore.Model
+import chessboardcore.Model._
 import com.raquo.laminar.api.L._
 import io.laminext.websocket.WebSocket
-import chessboardcore.Model._
-import io.circe.syntax._
-import io.circe.generic.auto._
 
 object GameLogic {
   case class Module(sendWsEventObserver: Observer[Model.WsEv])
