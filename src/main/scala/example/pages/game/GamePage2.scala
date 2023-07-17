@@ -1,37 +1,68 @@
 package example.pages.game
 
-import chessboardcore.Model
+import cats.effect.IO
+import chessboardcore.Model._
+import chessboardcore.Vec2d
 import com.raquo.laminar.api.L._
+import example.AppModel
 import example.HttpClient
-import io.circe.generic.auto._
+import example.pages.creator.BoardModel
+import example.pages.creator.ExBoard
 import io.laminext.websocket.WebSocket
 import io.laminext.websocket.circe._
+import io.circe.generic.auto._
 
 object GamePage2 {
   sealed trait Event
   case class PingClicked() extends Event
+  case class LoadBoard() extends Event
+
+  case class State(board: Var[Board])
+
+  private def initialState = State(Var(Board.empty))
 
   def component(): Element = {
+    val state = initialState
     val bus = new EventBus[Event]
     val url = HttpClient.gameWebSockerUrl("abc")
-    val ws: WebSocket[Model.WsEvent, Model.WsEvent] = WebSocket
-      .url(url)
-      .json[Model.WsEvent, Model.WsEvent]
-      .build()
+    val ws: WebSocket[WsEv, WsEv] = WebSocket.url(url).json[WsEv, WsEv].build()
 
     div(
-      button("Ping", onClick.mapTo(PingClicked()) --> bus),
       ws.connect,
-      onMountCallback(ctx => onMounted(bus, ctx.owner, ws))
+      onMountCallback(ctx => onMounted(bus, ctx.owner, ws, state))
     )
   }
 
   private def onMounted(
       bus: EventBus[Event],
       owner: Owner,
-      ws: WebSocket[Model.WsEvent, Model.WsEvent]
+      ws: WebSocket[WsEv, WsEv],
+      state: State
   ): Unit = {
-    val module = GameLogic.create(ws)(owner)
-    GameLogic.wireGamePage2(module, bus.events)(owner)
+    GameLogic.wireGamePage2(bus.events, state, ws)(owner)
+    bus.emit(LoadBoard())
+  }
+
+  private def boardComponent(state: State, dm: AppModel.DM): Element = {
+    val handler = (event: BoardModel.Event) => IO.unit
+    val boardData: BoardModel.Data = BoardModel.Data(
+      canvasSize = AppModel.DefaultBoardCanvasSize,
+      boardSize = state.board.signal.map(_.size),
+      placedPieces = state.board.signal.map(pieces),
+      dm = dm
+    )
+
+    ExBoard.component(boardData, handler)
+  }
+
+  private def pieces(board: Board): Map[Vec2d, BoardModel.PieceUiModel] = {
+    board
+      .pieces
+      .map { p =>
+        val pos = p.pos
+        val pieceUiModel = BoardModel.PieceUiModel(p.piece, Var(true))
+        (pos, pieceUiModel)
+      }
+      .toMap
   }
 }

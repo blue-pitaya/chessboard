@@ -68,7 +68,6 @@ object GameService {
       ws: WebSocketBuilder2[IO]
   ): IO[Response[IO]] = {
     for {
-      _ <- IO.println("joined")
       state <- stateRef.get
       gameModule <- IO
         .fromOption(state.games.get(gameId))(new Exception("game not found"))

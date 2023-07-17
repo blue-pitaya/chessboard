@@ -3,35 +3,37 @@ package example.pages.game
 import chessboardcore.Model
 import com.raquo.laminar.api.L._
 import io.laminext.websocket.WebSocket
-
-object GameModel {
-  case class State()
-
-}
+import chessboardcore.Model._
+import io.circe.syntax._
+import io.circe.generic.auto._
 
 object GameLogic {
-  case class Module(sendWsEventObserver: Observer[Model.WsEvent])
+  case class Module(sendWsEventObserver: Observer[Model.WsEv])
 
-  def create(
-      ws: WebSocket[Model.WsEvent, Model.WsEvent]
-  )(implicit owner: Owner): Module = {
-    ws.send.onNext(Model.MPing("ok"))
-
-    ws.received.addObserver(Observer[Model.WsEvent](v => println(v)))
-
-    Module(sendWsEventObserver = ws.send)
-  }
-
-  def wireGamePage2(module: Module, events: EventStream[GamePage2.Event])(
-      implicit owner: Owner
-  ): Unit = {
-    val _handleEvent = (e: GamePage2.Event) => handleEvent(e, module)
+  def wireGamePage2(
+      events: EventStream[GamePage2.Event],
+      state: GamePage2.State,
+      ws: WebSocket[WsEv, WsEv]
+  )(implicit owner: Owner): Unit = {
+    val _handleWsEvent = (e: WsEv) => handleWsEvent(e, state)
+    val _handleEvent = (e: GamePage2.Event) => handleEvent(e, state, ws.sendOne)
     val eventObserver = Observer[GamePage2.Event](_handleEvent)
+
+    ws.received.addObserver(Observer[Model.WsEv](_handleWsEvent))
     events.addObserver(eventObserver)
   }
 
-  def handleEvent(e: GamePage2.Event, module: Module): Unit = e match {
-    case GamePage2.PingClicked() =>
-      module.sendWsEventObserver.onNext(Model.MPing("hey"))
+  def handleWsEvent(e: WsEv, state: GamePage2.State): Unit = e match {
+    case WsEv(BoardData(v)) => state.board.set(v)
+    case _                  => ()
+  }
+
+  def handleEvent(
+      e: GamePage2.Event,
+      state: GamePage2.State,
+      sendWsEvent: WsEv => Unit
+  ): Unit = e match {
+    case GamePage2.PingClicked() => println(";)")
+    case GamePage2.LoadBoard()   => sendWsEvent(WsEv(Model.GetBoard()))
   }
 }

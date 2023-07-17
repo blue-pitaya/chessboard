@@ -3,65 +3,71 @@ package chessboardapi
 import cats.effect.IO
 import cats.effect.kernel.Ref
 import chessboardcore.Model._
-import chessboardcore.Vec2d
 import io.circe.generic.auto._
 import io.circe.syntax._
 import org.http4s.Response
 import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.websocket.WebSocketFrame
+import io.circe.parser
 
 //give me akka actor vibes ( ͠° ͟ʖ ͡°)
 object TrueGameService {
-  case class State(
-      info: GameInfo,
-      whitePlayer: PlayerState,
-      blackPlayer: PlayerState
-  )
+  case class State(board: Board)
+
+  private def initialState = State(Examples.board)
 
   case class Module(subsrice: WebSocketBuilder2[IO] => IO[Response[IO]])
 
-  def decode(frame: WebSocketFrame): WsEvent = MPing(frame.toString())
-
-  def handle(e: WsEvent): WsEvent = e match {
-    case MPing(v) => MPong(v)
-    case MPong(v) => ???
+  def decode(frame: WebSocketFrame): IO[WsEv] = {
+    for {
+      frameDataStr <- IO.fromEither(frame.data.decodeUtf8)
+      event <- IO.fromEither(parser.decode[WsEv](frameDataStr))
+    } yield (event)
   }
 
-  def encode(e: WsEvent): WebSocketFrame = {
+  def handle(e: WsEv, stateRef: Ref[IO, State]): IO[WsEv] = e match {
+    case WsEv(GetBoard()) => for {
+        state <- stateRef.get
+        board = state.board
+      } yield (WsEv(BoardData(board)))
+    case _ => IO.pure(WsEv(Ok()))
+  }
+
+  def encode(e: WsEv): IO[WebSocketFrame] = {
     val json = e.asJson.toString()
-    WebSocketFrame.Text(json)
+    IO.pure(WebSocketFrame.Text(json))
   }
 
   def create(): IO[Module] = {
     for {
       stateRef <- Ref.of[IO, State](initialState)
-      x <- WebSockerBroadcaster.create(decode, handle, encode)
+      _handle = (e: WsEv) => handle(e, stateRef)
+      x <- WebSockerBroadcaster.create(decode, _handle, encode)
       s = (ws: WebSocketBuilder2[IO]) => {
         ws.build(x._1, x._2)
       }
     } yield (Module(s))
   }
 
-  def handleInput(e: WsEvent, sr: Ref[IO, State]): IO[WsEvent] = e match {
-    case MPing(v) => for {
-        state <- sr.get
-      } yield (MPong(state.toString()))
-    case MPong(v) => ???
-  }
-
-  def initialState: State = State(
-    info = GameInfo(
-      board = Board(
-        Vec2d(6, 6),
-        List(
-          PlacedPiece(pos = Vec2d(0, 0), piece = Piece(White, King)),
-          PlacedPiece(pos = Vec2d(5, 5), piece = Piece(Black, King))
-        )
-      ),
-      timeSettings = TimeSettings(180),
-      players = Players.init
-    ),
-    whitePlayer = PlayerState.Empty,
-    blackPlayer = PlayerState.Empty
-  )
+  // case class State(
+  //    info: GameInfo,
+  //    whitePlayer: PlayerState,
+  //    blackPlayer: PlayerState
+  // )
+  //
+  // def initialState: State = State(
+  //  info = GameInfo(
+  //    board = Board(
+  //      Vec2d(6, 6),
+  //      List(
+  //        PlacedPiece(pos = Vec2d(0, 0), piece = Piece(White, King)),
+  //        PlacedPiece(pos = Vec2d(5, 5), piece = Piece(Black, King))
+  //      )
+  //    ),
+  //    timeSettings = TimeSettings(180),
+  //    players = Players.init
+  //  ),
+  //  whitePlayer = PlayerState.Empty,
+  //  blackPlayer = PlayerState.Empty
+  // )
 }

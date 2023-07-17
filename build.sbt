@@ -20,7 +20,9 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   .settings(
     name := "chessboard-core",
     libraryDependencies += "org.typelevel" %%% "cats-core" % "2.8.0",
-    libraryDependencies += "org.typelevel" %%% "cats-effect" % "3.3.14"
+    libraryDependencies += "org.typelevel" %%% "cats-effect" % "3.3.14",
+    libraryDependencies += "io.circe" %%% "circe-generic" % CirceVersion,
+    libraryDependencies += "io.circe" %%% "circe-parser" % CirceVersion
   )
   .jsSettings(
     scalaJSLinkerConfig ~=

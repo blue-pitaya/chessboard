@@ -1,5 +1,10 @@
 package chessboardcore
 
+import cats.syntax.functor._
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.auto._
+import io.circe.syntax._
+
 object Model {
   sealed trait PieceKind
   case object Pawn extends PieceKind
@@ -19,6 +24,9 @@ object Model {
 
   case class TimeSettings(timePerPlayerInSec: Int)
   case class Board(size: Vec2d, pieces: List[Model.PlacedPiece])
+  object Board {
+    def empty = Board(size = Vec2d(0, 0), pieces = List())
+  }
 
   sealed trait PlayerState
   object PlayerState {
@@ -40,6 +48,10 @@ object Model {
 
   // web socket
   sealed trait WsEvent
-  case class MPing(v: String) extends WsEvent
-  case class MPong(v: String) extends WsEvent
+  case class GetBoard() extends WsEvent
+  case class BoardData(v: Board) extends WsEvent
+  case class Ok() extends WsEvent
+
+  // can be lifted kurwa
+  case class WsEv(e: WsEvent)
 }

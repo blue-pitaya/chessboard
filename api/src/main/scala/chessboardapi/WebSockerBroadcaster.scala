@@ -11,15 +11,15 @@ object WebSockerBroadcaster {
   type RecvPipe = Pipe[IO, WebSocketFrame, Unit]
 
   def create[A, B](
-      decode: WebSocketFrame => A,
-      handle: A => B,
-      encode: B => WebSocketFrame
+      decode: WebSocketFrame => IO[A],
+      handle: A => IO[B],
+      encode: B => IO[WebSocketFrame]
   ): IO[(SendStream, RecvPipe)] = {
     for {
       topic <- Topic[IO, B]
-      recvPipe: RecvPipe =
-        inStream => inStream.map(decode).map(handle).through(topic.publish)
-      sendStream: SendStream = topic.subscribeUnbounded.map(encode)
+      recvPipe: RecvPipe = inStream =>
+        inStream.evalMap(decode).evalMap(handle).through(topic.publish)
+      sendStream: SendStream = topic.subscribeUnbounded.evalMap(encode)
     } yield ((sendStream, recvPipe))
   }
 }

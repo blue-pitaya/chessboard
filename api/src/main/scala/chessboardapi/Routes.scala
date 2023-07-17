@@ -58,7 +58,6 @@ object Routes {
         } yield (resp)
 
       case _ -> Root / GamePart / gameId / "ws" => for {
-          _ <- IO.println("ok")
           resp <- GameService.join(gameId, state2Ref, ws)
         } yield (resp)
     }

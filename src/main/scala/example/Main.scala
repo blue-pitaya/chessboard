@@ -8,7 +8,6 @@ import example.pages.home.HomePage
 import org.http4s.client.Client
 import org.http4s.dom._
 import org.scalajs.dom
-import example.pages.game.GamePage
 import example.pages.game.GamePage2
 
 object Main extends App {
