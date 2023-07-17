@@ -49,12 +49,14 @@ object Utils {
     (renderSizeInPx.y - pos.y) / getTileSize(logicSize, renderSizeInPx).y
   )
 
-  def catsRun[A](f: A => IO[Unit]): A => Unit = { e =>
-    f(e).unsafeRunAsync { cb =>
-      cb match {
-        case Left(err)    => dom.console.error(err.toString())
-        case Right(value) => ()
-      }
+  def run(f: IO[Unit]): Unit = f.unsafeRunAsync { cb =>
+    cb match {
+      case Left(err)    => dom.console.error(err)
+      case Right(value) => ()
     }
+  }
+
+  def catsRun[A](f: A => IO[Unit]): A => Unit = { e =>
+    run(f(e))
   }
 }

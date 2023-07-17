@@ -17,7 +17,11 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   .withoutSuffixFor(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("core"))
-  .settings(name := "chessboard-core")
+  .settings(
+    name := "chessboard-core",
+    libraryDependencies += "org.typelevel" %%% "cats-core" % "2.8.0",
+    libraryDependencies += "org.typelevel" %%% "cats-effect" % "3.3.14"
+  )
   .jsSettings(
     scalaJSLinkerConfig ~=
       (_.withModuleKind(ModuleKind.ESModule)
@@ -39,6 +43,8 @@ lazy val root = (project in file("."))
     libraryDependencies += "dev.bluepitaya" %%% "laminar-dragging" % "1.1",
     libraryDependencies += "org.http4s" %%% "http4s-circe" % Http4sVersion,
     libraryDependencies += "io.circe" %%% "circe-generic" % CirceVersion,
+    libraryDependencies += "io.laminext" %%% "websocket" % "0.16.0",
+    libraryDependencies += "io.laminext" %%% "websocket-circe" % "0.16.0",
     libraryDependencies ++=
       Seq(
         "org.http4s" %%% "http4s-client" % Http4sVersion,

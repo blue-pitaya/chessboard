@@ -1,12 +1,14 @@
 package example.pages.game
 
 import cats.effect.IO
+import cats.effect.kernel.Resource
 import chessboardcore.Model
 import chessboardcore.Vec2d
 import com.raquo.laminar.api.L._
 import example.Utils
 import example.pages.creator.BoardModel
 import example.pages.creator.ExBoard
+import org.http4s.client.websocket.WSConnectionHighLevel
 
 object GamePageModel {
   case class State(
@@ -22,27 +24,72 @@ object GamePage {
   import GamePageModel._
   import example.AppModel._
 
+  type AuthToken = String
+  type GameId = String
+  type WS = Resource[IO, WSConnectionHighLevel[IO]]
+
   def component(
-      id: String,
       dm: DM,
-      fetchGameInfo: String => IO[Model.GameInfo]
+      fetchGameInfo: IO[Model.GameInfo],
+      ws: Resource[IO, WSConnectionHighLevel[IO]]
   ): Element = {
     val state = State.init
+    val wsEventBus = new EventBus[Model.WsEvent]
+
     val _boardComponent = (gi: Model.GameInfo) => boardComponent(state, gi, dm)
+    val _handleGameInfo = (gi: Model.GameInfo) => handleGameInfo(gi, state)
+    val _onMounted =
+      onMounted(fetchGameInfo, _handleGameInfo, useWs(ws, wsEventBus.events))
+    val _loadedComponent = (gi: Model.GameInfo) =>
+      loadedComponent(state, gi, _boardComponent(gi), ???)
 
     div(
-      child <-- innerComponentSignal(state, _boardComponent),
-      onMountCallback { _ =>
-        // TODO: strange signature
-        Utils
-          .catsRun[String](id => handleGameInfo(fetchGameInfo(id), state))(id)
-      }
+      child <-- innerComponentSignal(state, _loadedComponent),
+      onMountCallback(_ => Utils.run(_onMounted))
     )
   }
 
-  def handleGameInfo(gameInfoIo: IO[Model.GameInfo], state: State): IO[Unit] = {
+  def onMounted(
+      fetchGameInfo: IO[Model.GameInfo],
+      handleGameInfo: Model.GameInfo => IO[Unit],
+      useWs: IO[Unit]
+  ): IO[Unit] = for {
+    gameInfo <- fetchGameInfo
+    _ <- handleGameInfo(gameInfo)
+    _ <- useWs
+  } yield ()
+
+  def useWs(ws: WS, wsEvents: EventStream[Model.WsEvent]): IO[Unit] = ws
+    .use { conn =>
+      val receiveMessages: IO[Unit] = conn
+        .receiveStream
+        .evalTap(frame => IO.println(frame.toString()))
+        .compile
+        .drain
+
+      receiveMessages
+    }
+
+  // def authToken(): IO[String] = for {
+  //  tokenOpt <- tokenFromLocalStorage()
+  //  token <- tokenOpt match {
+  //    case None        => generateAndSaveToken()
+  //    case Some(value) => IO.pure(value)
+  //  }
+  // } yield (token)
+
+  // private val AuthTokenKey = "auth_token"
+
+  // def tokenFromLocalStorage(): IO[Option[String]] =
+  //  IO(Option(dom.window.localStorage.getItem("auth_token")))
+
+  // def generateAndSaveToken(): IO[String] = for {
+  //  token <- chessboardcore.Utils.createId()
+  //  _ <- IO(dom.window.localStorage.setItem("auth_token", token))
+  // } yield (token)
+
+  def handleGameInfo(gameInfo: Model.GameInfo, state: State): IO[Unit] = {
     for {
-      gameInfo <- gameInfoIo
       _ <- IO(state.fetchedGameInfo.set(Some(gameInfo)))
       _ <- IO(state.pieces.set(pieces(gameInfo)))
     } yield ()
@@ -62,12 +109,12 @@ object GamePage {
 
   def innerComponentSignal(
       state: State,
-      boardComponent: Model.GameInfo => Element
+      loadedComponent: Model.GameInfo => Element
   ): Signal[Element] = state
     .fetchedGameInfo
     .signal
     .map {
-      case Some(v) => loadedComponent(state, v, boardComponent(v))
+      case Some(v) => loadedComponent(v)
       case None    => notLoadedComponent()
     }
 
@@ -78,9 +125,20 @@ object GamePage {
   def loadedComponent(
       state: State,
       gameInfo: Model.GameInfo,
-      boardComponent: Element
+      boardComponent: Element,
+      pingComponent: Element
   ): Element = {
-    div(p("OK!"), boardComponent)
+    div(cls("flex flex-row gap-4 p-4"), boardComponent, pingElement)
+  }
+
+  def pingElement(): Element = {
+    button(
+      "ping",
+      onClick.mapToUnit -->
+        Observer[Unit] { _ =>
+          ???
+        }
+    )
   }
 
   def boardComponent(

@@ -37,4 +37,9 @@ object Model {
       timeSettings: TimeSettings,
       players: Players
   )
+
+  // web socket
+  sealed trait WsEvent
+  case class MPing(v: String) extends WsEvent
+  case class MPong(v: String) extends WsEvent
 }
