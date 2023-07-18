@@ -20,6 +20,14 @@ object CreatorPage {
 
       Utils.run(EvHandler.handle(state, generalEv))
     }
+    val deleteZoneHandler = Observer[DeleteZoneComponent.Event] { e =>
+      val generalEv: ExAppModel.Ev = e match {
+        case DeleteZoneComponent.RefChanged(v) =>
+          ExAppModel.RemoveZoneRefChanged(v)
+      }
+
+      Utils.run(EvHandler.handle(state, generalEv))
+    }
     val boardData: BoardComponent.Data = BoardComponent.Data(
       canvasSize = AppModel.DefaultBoardCanvasSize,
       boardSize = state.boardSize.signal,
@@ -35,7 +43,7 @@ object CreatorPage {
       div(
         cls("flex flex-col w-[200px] justify-between"),
         PiecePicker.component(piecePickerData, handler),
-        DeleteZone.component(handler)
+        DeleteZoneComponent.create(deleteZoneHandler)
       ),
       child <-- draggingPieceComponentSignal(state)
     )
