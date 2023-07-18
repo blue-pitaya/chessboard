@@ -45,7 +45,7 @@ object GamePage {
   }
 
   private def boardComponent(state: State, dm: AppModel.DM): Element = {
-    val handler = (event: BoardModel.Event) => IO.unit
+    val handler = (event: BoardModel.Event) => IO.println(event)
     val boardData = BoardModel.Data(
       canvasSize = AppModel.DefaultBoardCanvasSize,
       boardSize = state.gameState.signal.map(_.board.size),

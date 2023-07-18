@@ -34,8 +34,18 @@ object CreatorPage {
         PiecePicker.component(piecePickerData, handler),
         DeleteZone.component(handler)
       ),
-      child <-- ExDraggingPiece.componentSignal(state, handler)
+      child <-- draggingPieceComponentSignal(state)
     )
+  }
+
+  def draggingPieceComponentSignal(state: ExAppModel.State): Signal[Node] = {
+    val data = ExDraggingPiece.Data(
+      draggingPieceState = state.draggingPieceState.signal,
+      boardSize = state.boardSize.signal,
+      canvasSize = state.canvasSize
+    )
+
+    ExDraggingPiece.componentSignal(data)
   }
 
 }

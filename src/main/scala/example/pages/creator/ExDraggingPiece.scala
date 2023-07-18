@@ -1,22 +1,29 @@
 package example.pages.creator
 
-import cats.effect.IO
-import com.raquo.laminar.api.L._
 import chessboardcore.Vec2d
+import com.raquo.laminar.api.L._
 import org.scalajs.dom
 
 object ExDraggingPiece {
   import ExAppModel._
 
-  def componentSignal(state: State, handler: Ev => IO[Unit]): Signal[Node] = {
-    state
+  sealed trait Event
+
+  case class Data(
+      draggingPieceState: Signal[Option[DraggingPieceState]],
+      boardSize: Signal[Vec2d],
+      canvasSize: Vec2d
+  )
+
+  def componentSignal(data: Data): Signal[Node] = {
+    data
       .draggingPieceState
       .signal
-      .withCurrentValueOf(state.boardSize)
+      .withCurrentValueOf(data.boardSize)
       .map { case (sOpt, boardSize) =>
         sOpt match {
           case None    => emptyNode
-          case Some(s) => component(boardSize, state.canvasSize, s)
+          case Some(s) => component(boardSize, data.canvasSize, s)
         }
       }
   }
