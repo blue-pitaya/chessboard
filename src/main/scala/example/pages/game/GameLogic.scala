@@ -13,6 +13,9 @@ import example.pages.game.PlayersSection.PlayerReady
 import io.laminext.websocket.WebSocket
 import example.components.DraggingPiece
 import example.Misc
+import chessboardcore.Model.PlayerState.Empty
+import chessboardcore.Model.PlayerState.Ready
+import chessboardcore.Model.PlayerState.Sitting
 
 object GameLogic {
   case class Module(sendWsEventObserver: Observer[Model.WsEv])
@@ -82,10 +85,35 @@ object GameLogic {
       case ElementRefChanged(v) => state.boardComponentRef.set(Some(v))
       case PieceDragging(e, fromPos) =>
         val pieceOpt = state.pieces.now().get(fromPos)
-        pieceOpt match {
-          case None        => ()
-          case Some(piece) => handlePieceDragging(e, piece, state)
+        val gameStarted = state.gameState.now().gameStarted
+        val myPlayerId = state.playerId
+        val currentTurn = state.gameState.now().turn
+        val isMyPiece = (col: PieceColor) =>
+          playerId(state, col).map(_ == myPlayerId).getOrElse(false)
+
+        (pieceOpt, gameStarted) match {
+          case (Some(piece), true) => if (isMyPiece(piece.piece.color))
+              handlePieceDragging(e, piece, state)
+            else ()
+          case _ => ()
         }
+    }
+  }
+
+  // TODO: dup?
+  private def playerId(
+      state: GamePage.State,
+      color: PieceColor
+  ): Option[String] = {
+    val plState = color match {
+      case Black => state.gameState.now().blackPlayerState
+      case White => state.gameState.now().whitePlayerState
+    }
+
+    plState match {
+      case Empty             => None
+      case Ready(playerId)   => Some(playerId)
+      case Sitting(playerId) => Some(playerId)
     }
   }
 
