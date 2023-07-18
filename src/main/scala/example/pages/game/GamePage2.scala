@@ -63,7 +63,8 @@ object GamePage2 {
     val data = PlayersSection.Data(
       state.playerId,
       state.gameState.signal.map(_.whitePlayerState),
-      state.gameState.signal.map(_.blackPlayerState)
+      state.gameState.signal.map(_.blackPlayerState),
+      state.gameState.signal.map(_.gameStarted)
     )
 
     PlayersSection.component(data, plSectionObs)

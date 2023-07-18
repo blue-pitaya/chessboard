@@ -12,11 +12,11 @@ import org.http4s.server.websocket.WebSocketBuilder2
 
 object TrueGameService {
   case class State(gameState: GameState)
+  // TODO: this in unnecessary
   case class Module(subsrice: WebSocketBuilder2[IO] => IO[Response[IO]])
 
-  private def createState(board: Board): IO[Ref[IO, State]] = Ref.of[IO, State](
-    State(GameState(board, PlayerState.Empty, PlayerState.Empty))
-  )
+  private def createState(board: Board): IO[Ref[IO, State]] = Ref
+    .of[IO, State](State(GameState.empty.copy(board = board)))
 
   private def handle(e: WsEv, stateRef: Ref[IO, State]): IO[WsEv] = {
     val _updateGameState = (f: State => State) => updateGameState(stateRef, f)
@@ -30,11 +30,27 @@ object TrueGameService {
         _updateGameState(s => sitPlayer(color, playerId, s))
 
       case PlayerReady(playerId) =>
-        _updateGameState(s => readyPlayer(playerId, s))
+        _updateGameState(s => handlePlayerReady(s, playerId))
 
       case _ => IO.pure(WsEv(Ok()))
     }
   }
+
+  private def handlePlayerReady(state: State, playerId: String): State = {
+    val nextState = readyPlayer(playerId, state)
+    if (areBothPlayersReady(nextState.gameState)) startGame(nextState)
+    else nextState
+  }
+
+  private def startGame(state: State): State = state
+    .focus(_.gameState.gameStarted)
+    .replace(true)
+
+  private def areBothPlayersReady(gs: GameState): Boolean =
+    (gs.whitePlayerState, gs.blackPlayerState) match {
+      case (PlayerState.Ready(_), PlayerState.Ready(_)) => true
+      case _                                            => false
+    }
 
   private def updateGameState(
       stateRef: Ref[IO, State],

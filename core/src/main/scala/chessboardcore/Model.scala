@@ -27,7 +27,6 @@ object Model {
     case object Empty extends PlayerState
     case class Sitting(playerId: String) extends PlayerState
     case class Ready(playerId: String) extends PlayerState
-    case class Playing(playerId: String) extends PlayerState
 
     def default = Empty
   }
@@ -35,10 +34,12 @@ object Model {
   case class GameState(
       board: Board,
       whitePlayerState: PlayerState,
-      blackPlayerState: PlayerState
+      blackPlayerState: PlayerState,
+      gameStarted: Boolean
   )
   object GameState {
-    def empty = GameState(Board.empty, PlayerState.default, PlayerState.default)
+    def empty =
+      GameState(Board.empty, PlayerState.default, PlayerState.default, false)
   }
 
   // web socket
@@ -47,6 +48,7 @@ object Model {
   case class GameStateData(v: GameState) extends WsEvent
   case class PlayerSit(playerId: String, color: PieceColor) extends WsEvent
   case class PlayerReady(playerId: String) extends WsEvent
+  case class Move(playerId: String, from: Vec2d, to: Vec2d) extends WsEvent
   case class Ok() extends WsEvent
 
   // TODO: can be lifted kurwa
