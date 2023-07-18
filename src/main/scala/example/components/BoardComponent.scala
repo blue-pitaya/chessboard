@@ -1,21 +1,23 @@
-package example.pages.creator
+package example.components
 
-import cats.effect.IO
+import chessboardcore.Model
 import chessboardcore.Vec2d
 import com.raquo.laminar.api.L._
-import org.scalajs.dom
-import example.Utils
 import dev.bluepitaya.laminardragging.Dragging
-import example.Misc
 import example.AppModel._
-import chessboardcore.Model
+import example.Misc
 import example.components.Logic
+import org.scalajs.dom
 
-object BoardModel {
+object BoardComponent {
   type BoardSize = Vec2d
   type BoardPos = Vec2d
 
   case class PieceUiModel(piece: Model.Piece, isVisible: Var[Boolean])
+
+  sealed trait Event
+  case class ElementRefChanged(v: dom.Element) extends Event
+  case class PieceDragging(e: Dragging.Event, fromPos: Vec2d) extends Event
 
   case class Data(
       canvasSize: Vec2d,
@@ -24,15 +26,7 @@ object BoardModel {
       dm: DM
   )
 
-  sealed trait Event
-  case class ElementRefChanged(v: dom.Element) extends Event
-  case class PieceDragging(e: Dragging.Event, fromPos: Vec2d) extends Event
-}
-
-object ExBoard {
-  import BoardModel._
-
-  def component(data: Data, handler: Event => IO[Unit]): Element = {
+  def create(data: Data, handler: Observer[Event]): Element = {
     val canvasSize = data.canvasSize
 
     val _tileSize = (bs: BoardSize) => Logic.tileSize(bs, canvasSize)
@@ -64,7 +58,7 @@ object ExBoard {
       svg.g(children <-- _tilesSignal),
       svg.g(children <-- _placedPiecesSignal),
       onMountCallback(ctx =>
-        Utils.catsRun(handler)(ElementRefChanged(ctx.thisNode.ref))
+        handler.onNext(ElementRefChanged(ctx.thisNode.ref))
       )
     )
   }
@@ -72,13 +66,14 @@ object ExBoard {
   def placedPieceDraggingBindings(
       fromPos: Vec2d,
       dm: DM,
-      handler: Event => IO[Unit]
+      handler: Observer[Event]
   ): Seq[Binder.Base] = {
     val draggingId = DraggingId.PlacedPiece(fromPos)
+
     dm.componentBindings(draggingId) ++
       Seq(
         dm.componentEvents(draggingId).map(e => PieceDragging(e, fromPos)) -->
-          PiecePicker.catsRunObserver(handler)
+          handler
       )
   }
 

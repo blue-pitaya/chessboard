@@ -6,13 +6,14 @@ import org.scalajs.dom
 import chessboardcore.Vec2d
 import chessboardcore.Model._
 import example.components.DraggingPiece.DraggingPieceState
+import example.components.BoardComponent
 
 object ExAppModel {
   case class State(
       draggingPieceState: Var[Option[DraggingPieceState]],
       boardContainerRef: Var[Option[dom.Element]],
       boardSize: Var[Vec2d],
-      placedPieces: Var[Map[Vec2d, BoardModel.PieceUiModel]],
+      placedPieces: Var[Map[Vec2d, BoardComponent.PieceUiModel]],
       removeZoneComponentRef: Var[Option[dom.Element]]
   )
   object State {

@@ -25,10 +25,11 @@ import org.http4s.client.Client
 import org.scalajs.dom
 import example.components.Logic
 import example.components.DraggingPiece.DraggingPieceState
+import example.components.BoardComponent
 
 object EvHandler {
   import ExAppModel._
-  import BoardModel._
+  import example.components.BoardComponent._
 
   def handle(state: State, event: Ev): IO[Unit] = {
     event match {
@@ -76,7 +77,8 @@ object EvHandler {
       .now()
       .toList
       .collect {
-        case (pos, pieceUiModel) if ExBoard.isPosOnBoard(pos, boardSize) =>
+        case (pos, pieceUiModel)
+            if BoardComponent.isPosOnBoard(pos, boardSize) =>
           PlacedPiece(pos = pos, piece = pieceUiModel.piece)
       }
 
@@ -212,7 +214,8 @@ object EvHandler {
       canvasPos: Vec2d
   ): Option[Vec2d] = {
     val tileSize = Logic.tileSize(boardSize, canvasSize)
-    val boardOffset = ExBoard.boardOffset(tileSize, boardSize, canvasSize)
+    val boardOffset = BoardComponent
+      .boardOffset(tileSize, boardSize, canvasSize)
     val onBoardPos = (canvasPos - boardOffset)
     val pos =
       Vec2f(onBoardPos.x.toDouble / tileSize, onBoardPos.y.toDouble / tileSize)

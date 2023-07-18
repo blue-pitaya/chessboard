@@ -1,17 +1,15 @@
 package example.pages.game
 
-import cats.effect.IO
 import chessboardcore.Model._
 import chessboardcore.Vec2d
 import com.raquo.laminar.api.L._
 import example.AppModel
 import example.HttpClient
-import example.pages.creator.BoardModel
-import example.pages.creator.ExBoard
+import example.components.BoardComponent
+import example.components.DraggingPiece
 import io.circe.generic.auto._
 import io.laminext.websocket.WebSocket
 import io.laminext.websocket.circe._
-import example.components.DraggingPiece
 
 object GamePage {
   sealed trait Event
@@ -51,15 +49,17 @@ object GamePage {
   }
 
   private def boardComponent(state: State, dm: AppModel.DM): Element = {
-    val handler = (event: BoardModel.Event) => IO.println(event)
-    val boardData = BoardModel.Data(
+    val handler = Observer[BoardComponent.Event] { e =>
+      println(e)
+    }
+    val boardData = BoardComponent.Data(
       canvasSize = AppModel.DefaultBoardCanvasSize,
       boardSize = state.gameState.signal.map(_.board.size),
       placedPieces = state.gameState.signal.map(gs => pieces(gs.board)),
       dm = dm
     )
 
-    ExBoard.component(boardData, handler)
+    BoardComponent.create(boardData, handler)
   }
 
   private def playersSectionComponent(
@@ -77,12 +77,12 @@ object GamePage {
     PlayersSection.component(data, plSectionObs)
   }
 
-  private def pieces(board: Board): Map[Vec2d, BoardModel.PieceUiModel] = {
+  private def pieces(board: Board): Map[Vec2d, BoardComponent.PieceUiModel] = {
     board
       .pieces
       .map { p =>
         val pos = p.pos
-        val pieceUiModel = BoardModel.PieceUiModel(p.piece, Var(true))
+        val pieceUiModel = BoardComponent.PieceUiModel(p.piece, Var(true))
         (pos, pieceUiModel)
       }
       .toMap

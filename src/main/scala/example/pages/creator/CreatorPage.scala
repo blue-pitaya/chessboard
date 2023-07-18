@@ -3,22 +3,24 @@ package example.pages.creator
 import com.raquo.laminar.api.L._
 import example.AppModel
 import example.components.DraggingPiece
-import example.pages.creator.BoardModel.ElementRefChanged
-import example.pages.creator.BoardModel.PieceDragging
+import example.components.BoardComponent
+import example.Utils
 
 object CreatorPage {
   def component(dm: AppModel.DM): HtmlElement = {
     val state = ExAppModel.State.init
     val handler = (e: ExAppModel.Ev) => EvHandler.handle(state, e)
-    val boardHandler = (e: BoardModel.Event) => {
+    val boardHandler = Observer[BoardComponent.Event] { e =>
       val generalEv: ExAppModel.Ev = e match {
-        case ElementRefChanged(v) => ExAppModel.BoardContainerRefChanged(v)
-        case PieceDragging(e, fromPos) =>
+        case BoardComponent.ElementRefChanged(v) =>
+          ExAppModel.BoardContainerRefChanged(v)
+        case BoardComponent.PieceDragging(e, fromPos) =>
           ExAppModel.PlacedPieceDragging(e, fromPos)
       }
-      EvHandler.handle(state, generalEv)
+
+      Utils.run(EvHandler.handle(state, generalEv))
     }
-    val boardData: BoardModel.Data = BoardModel.Data(
+    val boardData: BoardComponent.Data = BoardComponent.Data(
       canvasSize = AppModel.DefaultBoardCanvasSize,
       boardSize = state.boardSize.signal,
       placedPieces = state.placedPieces.signal,
@@ -29,7 +31,7 @@ object CreatorPage {
     div(
       cls("flex flex-row gap-4 m-4"),
       ExBoardForm.component(state, handler),
-      ExBoard.component(boardData, boardHandler),
+      BoardComponent.create(boardData, boardHandler),
       div(
         cls("flex flex-col w-[200px] justify-between"),
         PiecePicker.component(piecePickerData, handler),
