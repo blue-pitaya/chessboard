@@ -29,24 +29,53 @@ object TrueGameService {
     } yield (event)
   }
 
-  private def handle(e: WsEv, stateRef: Ref[IO, State]): IO[WsEv] = e.e match {
-    case GetGameState() => for {
-        state <- stateRef.get
-      } yield (WsEv(GameStateData(state.gameState)))
+  private def handle(e: WsEv, stateRef: Ref[IO, State]): IO[WsEv] = {
+    val _updateGameState = (f: State => State) => updateGameState(stateRef, f)
 
-    case PlayerSit(color) => for {
-        nextState <- stateRef.updateAndGet(s => sitPlayer(color, s))
-      } yield (WsEv(GameStateData(nextState.gameState)))
+    e.e match {
+      case GetGameState() => for {
+          state <- stateRef.get
+        } yield (WsEv(GameStateData(state.gameState)))
 
-    case _ => IO.pure(WsEv(Ok()))
+      case PlayerSit(playerId, color) =>
+        _updateGameState(s => sitPlayer(color, playerId, s))
+
+      case PlayerReady(playerId) =>
+        _updateGameState(s => readyPlayer(playerId, s))
+
+      case _ => IO.pure(WsEv(Ok()))
+    }
   }
 
-  private def sitPlayer(color: PieceColor, state: State): State = {
+  private def updateGameState(
+      stateRef: Ref[IO, State],
+      f: State => State
+  ): IO[WsEv] = for {
+    nextState <- stateRef.updateAndGet(f)
+  } yield (WsEv(GameStateData(nextState.gameState)))
+
+  private def sitPlayer(
+      color: PieceColor,
+      playerId: String,
+      state: State
+  ): State = {
     val playerLens = playerByColor(color, state)
 
     playerLens.get match {
-      case Empty => playerLens.replace(PlayerState.Sitting)
+      case Empty => playerLens.replace(PlayerState.Sitting(playerId))
       case _     => state
+    }
+  }
+
+  private def readyPlayer(playerId: String, state: State): State = {
+    import PlayerState._
+
+    (state.gameState.whitePlayerState, state.gameState.blackPlayerState) match {
+      case (Sitting(id), _) if id == playerId =>
+        state.focus(_.gameState.whitePlayerState).replace(Ready(id))
+      case (_, Sitting(id)) if id == playerId =>
+        state.focus(_.gameState.blackPlayerState).replace(Ready(id))
+      case _ => state
     }
   }
 

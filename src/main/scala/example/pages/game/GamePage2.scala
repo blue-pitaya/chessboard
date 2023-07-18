@@ -16,12 +16,14 @@ object GamePage2 {
   sealed trait Event
   case class RequestGameState() extends Event
 
-  case class State(gameState: Var[GameState])
+  case class State(gameState: Var[GameState], playerId: String)
 
-  private def createState() = State(Var(GameState.empty))
+  private def createState(playerId: String) =
+    State(Var(GameState.empty), playerId)
 
   def component(gameId: String, dm: AppModel.DM): Element = {
-    val state = createState()
+    val playerId = chessboardcore.Utils.unsafeCreateId()
+    val state = createState(playerId)
     val bus = new EventBus[Event]
     val plSectionBus = new EventBus[PlayersSection.Event]
     val ws: WebSocket[WsEv, WsEv] = WebSocket
@@ -59,6 +61,7 @@ object GamePage2 {
       plSectionObs: Observer[PlayersSection.Event]
   ): Element = {
     val data = PlayersSection.Data(
+      state.playerId,
       state.gameState.signal.map(_.whitePlayerState),
       state.gameState.signal.map(_.blackPlayerState)
     )

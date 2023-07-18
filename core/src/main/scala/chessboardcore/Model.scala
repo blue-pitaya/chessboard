@@ -25,8 +25,9 @@ object Model {
   sealed trait PlayerState
   object PlayerState {
     case object Empty extends PlayerState
-    case object Sitting extends PlayerState
-    case object Ready extends PlayerState
+    case class Sitting(playerId: String) extends PlayerState
+    case class Ready(playerId: String) extends PlayerState
+    case class Playing(playerId: String) extends PlayerState
 
     def default = Empty
   }
@@ -44,7 +45,8 @@ object Model {
   sealed trait WsEvent
   case class GetGameState() extends WsEvent
   case class GameStateData(v: GameState) extends WsEvent
-  case class PlayerSit(color: PieceColor) extends WsEvent
+  case class PlayerSit(playerId: String, color: PieceColor) extends WsEvent
+  case class PlayerReady(playerId: String) extends WsEvent
   case class Ok() extends WsEvent
 
   // TODO: can be lifted kurwa

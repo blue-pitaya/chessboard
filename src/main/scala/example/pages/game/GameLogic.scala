@@ -4,6 +4,7 @@ import chessboardcore.Model
 import chessboardcore.Model._
 import com.raquo.laminar.api.L._
 import io.laminext.websocket.WebSocket
+import example.pages.game.PlayersSection.PlayerReady
 
 object GameLogic {
   case class Module(sendWsEventObserver: Observer[Model.WsEv])
@@ -43,6 +44,8 @@ object GameLogic {
       state: GamePage2.State,
       sendWsEvent: WsEv => Unit
   ): Unit = e match {
-    case PlayersSection.PlayerSit(color) => sendWsEvent(WsEv(PlayerSit(color)))
+    case PlayersSection.PlayerSit(color) =>
+      sendWsEvent(WsEv(PlayerSit(state.playerId, color)))
+    case PlayerReady() => sendWsEvent(WsEv(Model.PlayerReady(state.playerId)))
   }
 }
