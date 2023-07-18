@@ -14,7 +14,8 @@ object PlayersSection {
       myPlayerId: String,
       whitePlayerState: Signal[PlayerState],
       blackPlayerState: Signal[PlayerState],
-      gameStarted: Signal[Boolean]
+      gameStarted: Signal[Boolean],
+      currentTurn: Signal[PieceColor]
   )
 
   def component(data: Data, handler: Observer[Event]): Element = {
@@ -36,8 +37,15 @@ object PlayersSection {
           .combineWith(data.gameStarted)
           .map { case (plState, gs) =>
             _playerSection(Black, plState, gs)
-          }
+          },
+      child <-- data.currentTurn.map(currentTurnSection)
     )
+  }
+
+  def currentTurnSection(turn: PieceColor): Element = {
+    val plLabel = playerLabel(turn)
+
+    div(cls("flex flex-col"), div("Current turn:"), div(plLabel))
   }
 
   def playerSection(
@@ -47,16 +55,18 @@ object PlayersSection {
       gameStarted: Boolean,
       handler: Observer[Event]
   ): Element = {
-    val plLabel = color match {
-      case Black => "Black player"
-      case White => "White player"
-    }
+    val plLabel = playerLabel(color)
 
     val plActionSection =
       if (gameStarted) plActionSectionForStartedGame()
       else plActionSectionForNotStartedGame(myPlayerId, plState, color, handler)
 
     div(cls("flex flex-col gap-2 items-center"), plLabel, plActionSection)
+  }
+
+  private def playerLabel(color: PieceColor): String = color match {
+    case Black => "Black player"
+    case White => "White player"
   }
 
   def plActionSectionForStartedGame(): Element = {

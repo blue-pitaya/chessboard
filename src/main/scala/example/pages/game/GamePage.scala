@@ -64,7 +64,8 @@ object GamePage {
       state.playerId,
       state.gameState.signal.map(_.whitePlayerState),
       state.gameState.signal.map(_.blackPlayerState),
-      state.gameState.signal.map(_.gameStarted)
+      state.gameState.signal.map(_.gameStarted),
+      state.gameState.signal.map(_.turn)
     )
 
     PlayersSection.component(data, plSectionObs)

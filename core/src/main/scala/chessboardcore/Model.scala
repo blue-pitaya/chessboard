@@ -35,11 +35,17 @@ object Model {
       board: Board,
       whitePlayerState: PlayerState,
       blackPlayerState: PlayerState,
-      gameStarted: Boolean
+      gameStarted: Boolean,
+      turn: PieceColor
   )
   object GameState {
-    def empty =
-      GameState(Board.empty, PlayerState.default, PlayerState.default, false)
+    def empty = GameState(
+      Board.empty,
+      PlayerState.default,
+      PlayerState.default,
+      false,
+      White
+    )
   }
 
   // web socket
