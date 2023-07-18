@@ -5,11 +5,10 @@ import dev.bluepitaya.laminardragging.Dragging
 import org.scalajs.dom
 import chessboardcore.Vec2d
 import chessboardcore.Model._
-import example.AppModel._
+import example.components.DraggingPiece.DraggingPieceState
+import example.AppModel
 
 object ExAppModel {
-  case class DraggingPieceState(imgPath: String, draggingEvent: Dragging.Event)
-
   case class State(
       draggingPieceState: Var[Option[DraggingPieceState]],
       boardContainerRef: Var[Option[dom.Element]],
@@ -23,7 +22,7 @@ object ExAppModel {
       draggingPieceState = Var(None),
       boardContainerRef = Var(None),
       boardSize = Var(Vec2d(6, 6)),
-      canvasSize = DefaultBoardCanvasSize,
+      canvasSize = AppModel.DefaultBoardCanvasSize,
       placedPieces = Var(Map()),
       removeZoneComponentRef = Var(None)
     )

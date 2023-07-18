@@ -9,6 +9,7 @@ import dev.bluepitaya.laminardragging.Dragging
 import example.Misc
 import example.AppModel._
 import chessboardcore.Model
+import example.components.Logic
 
 object BoardModel {
   type BoardSize = Vec2d
@@ -34,7 +35,7 @@ object ExBoard {
   def component(data: Data, handler: Event => IO[Unit]): Element = {
     val canvasSize = data.canvasSize
 
-    val _tileSize = (bs: BoardSize) => tileSize(bs, canvasSize)
+    val _tileSize = (bs: BoardSize) => Logic.tileSize(bs, canvasSize)
     val _tileCanvasPos =
       (bs: BoardSize) => (pos: BoardPos) => tileCanvasPos(canvasSize, bs, pos)
     val _tileComponent = (boardSize: BoardSize) =>
@@ -177,7 +178,7 @@ object ExBoard {
   }
 
   def tileCanvasPos(canvasSize: Vec2d, boardSize: Vec2d, pos: Vec2d): Vec2d = {
-    val _tileSize = tileSize(boardSize, canvasSize)
+    val _tileSize = Logic.tileSize(boardSize, canvasSize)
     val _boardOffset = boardOffset(_tileSize, boardSize, canvasSize)
     val x = pos.x * _tileSize
     val y = (canvasSize.y - _tileSize) - (pos.y * _tileSize)
@@ -187,14 +188,6 @@ object ExBoard {
 
   def boardOffset(tileSize: Int, boardSize: Vec2d, canvasSize: Vec2d): Vec2d =
     (canvasSize - (boardSize * tileSize)) / 2
-
-  def tileSize(boardSize: Vec2d, canvasSize: Vec2d): Int = {
-    val maxSize = 100
-    val x = canvasSize.x / boardSize.x
-    val y = canvasSize.y / boardSize.y
-
-    Math.min(Math.min(maxSize, x), Math.min(maxSize, y))
-  }
 
   def tileColor(pos: Vec2d): String = {
     val blackTileColor = "#b58863"

@@ -23,6 +23,8 @@ import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.circe._
 import org.http4s.client.Client
 import org.scalajs.dom
+import example.components.Logic
+import example.components.DraggingPiece.DraggingPieceState
 
 object EvHandler {
   import ExAppModel._
@@ -209,7 +211,7 @@ object EvHandler {
       canvasSize: Vec2d,
       canvasPos: Vec2d
   ): Option[Vec2d] = {
-    val tileSize = ExBoard.tileSize(boardSize, canvasSize)
+    val tileSize = Logic.tileSize(boardSize, canvasSize)
     val boardOffset = ExBoard.boardOffset(tileSize, boardSize, canvasSize)
     val onBoardPos = (canvasPos - boardOffset)
     val pos =

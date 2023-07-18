@@ -1,13 +1,12 @@
-package example.pages.creator
+package example.components
 
 import chessboardcore.Vec2d
 import com.raquo.laminar.api.L._
 import org.scalajs.dom
+import dev.bluepitaya.laminardragging.Dragging
 
-object ExDraggingPiece {
-  import ExAppModel._
-
-  sealed trait Event
+object DraggingPiece {
+  case class DraggingPieceState(imgPath: String, draggingEvent: Dragging.Event)
 
   case class Data(
       draggingPieceState: Signal[Option[DraggingPieceState]],
@@ -33,7 +32,7 @@ object ExDraggingPiece {
       canvasSize: Vec2d,
       s: DraggingPieceState
   ): Element = {
-    val tileSize = ExBoard.tileSize(boardSize, canvasSize)
+    val tileSize = Logic.tileSize(boardSize, canvasSize)
     val _centerPos = centerPos(pointerPosition(s.draggingEvent.e), tileSize)
 
     div(
