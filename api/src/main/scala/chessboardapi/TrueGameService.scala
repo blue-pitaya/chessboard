@@ -9,6 +9,8 @@ import monocle.AppliedLens
 import monocle.syntax.all._
 import org.http4s.Response
 import org.http4s.server.websocket.WebSocketBuilder2
+import chessboardcore.Vec2d
+import chessboardcore.gamelogic.MoveLogic
 
 object TrueGameService {
   case class State(gameState: GameState)
@@ -32,9 +34,32 @@ object TrueGameService {
       case PlayerReady(playerId) =>
         _updateGameState(s => handlePlayerReady(s, playerId))
 
-      // case Move(playerId, from, to) => todo()
+      case Move(playerId, from, to) =>
+        _updateGameState(s => tryMakeMove(s, playerId, from, to))
 
       case _ => IO.pure(WsEv(Ok()))
+    }
+  }
+
+  private def tryMakeMove(
+      state: State,
+      playerId: String,
+      from: Vec2d,
+      to: Vec2d
+  ): State = {
+    if (MoveLogic.canMove(state.gameState.board, from, to))
+      makeMove(state, from, to)
+    else state
+  }
+
+  private def makeMove(state: State, from: Vec2d, to: Vec2d): State = {
+    lazy val lens = state.focus(_.gameState.board.pieces)
+
+    state.gameState.board.pieces.find(p => p.pos == from) match {
+      case None => state
+      case Some(placedPiece) =>
+        val nextPlacedPiece = PlacedPiece(to, placedPiece.piece)
+        lens.modify(_.filter(p => p.pos != from).appended(nextPlacedPiece))
     }
   }
 
