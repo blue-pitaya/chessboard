@@ -1,10 +1,23 @@
 package example.game
 
-import example.Utils.takeWhileInclusive
-import example.models._
 import chessboardcore.Vec2d
+import chessboardcore.Model._
 
 object PossibleMoves {
+
+  private def takeWhileInclusive[A](
+      start: A,
+      next: A => A,
+      stopInc: A => Boolean,
+      stopExc: A => Boolean
+  ) = {
+    def _f(curr: A, acc: Seq[A]): Seq[A] =
+      if (stopExc(curr)) acc
+      else if (stopInc(curr)) curr +: acc
+      else _f(next(curr), curr +: acc)
+
+    _f(start, Seq())
+  }
 
   private def lineAttacks(
       pos: Vec2d,
@@ -67,13 +80,13 @@ object PossibleMoves {
     val blackPawnSteps = Set(Vec2d(-1, -1), Vec2d(1, -1))
 
     piece match {
-      case Piece(King, _)     => attacks(kingSteps, jumpAttackSteps)
-      case Piece(Bishop, _)   => attacks(bishopSteps, lineAttackSteps)
-      case Piece(Knight, _)   => attacks(knightSteps, jumpAttackSteps)
-      case Piece(Queen, _)    => attacks(queenSteps, lineAttackSteps)
-      case Piece(Rook, _)     => attacks(rookSteps, lineAttackSteps)
-      case Piece(Pawn, White) => attacks(whitePawnSteps, jumpAttackSteps)
-      case Piece(Pawn, Black) => attacks(blackPawnSteps, jumpAttackSteps)
+      case Piece(_, King)     => attacks(kingSteps, jumpAttackSteps)
+      case Piece(_, Bishop)   => attacks(bishopSteps, lineAttackSteps)
+      case Piece(_, Knight)   => attacks(knightSteps, jumpAttackSteps)
+      case Piece(_, Queen)    => attacks(queenSteps, lineAttackSteps)
+      case Piece(_, Rook)     => attacks(rookSteps, lineAttackSteps)
+      case Piece(White, Pawn) => attacks(whitePawnSteps, jumpAttackSteps)
+      case Piece(Black, Pawn) => attacks(blackPawnSteps, jumpAttackSteps)
     }
   }
 
@@ -120,7 +133,7 @@ object PossibleMoves {
       lastMove: Option[GameMove]
   ): Set[Vec2d] = lastMove
     .map {
-      case Move(piece, from, to) =>
+      case TrueMove(piece, from, to) =>
         val lastMoveIsNearPawnDoubleUp = piece.kind == Pawn &&
           Math.abs(from.y - to.y) == 2 && Math.abs(pos.x - to.x) == 1
 
@@ -147,7 +160,7 @@ object PossibleMoves {
   private val isPieceOn =
     (pieces: Map[Vec2d, Piece]) => (v: Vec2d) => pieces.isDefinedAt(v)
 
-  private def getAttacks(pos: Vec2d, piece: Piece, state: GameState) = {
+  private def getAttacks(pos: Vec2d, piece: Piece, state: TrueGameState) = {
     val _isInsideBoard = isInsideBoard(state.size)
     val _isPieceOn = isPieceOn(state.pieces)
     val jumpAttackSteps =
@@ -161,10 +174,10 @@ object PossibleMoves {
   private def _getMoves(
       pos: Vec2d,
       piece: Piece,
-      state: GameState
+      state: TrueGameState
   ): Set[GameMove] = {
     val currentPieceAttacks = getAttacks(pos, piece, state)
-    val toMove = (toPos: Vec2d) => Move(piece, pos, toPos)
+    val toMove = (toPos: Vec2d) => TrueMove(piece, pos, toPos)
 
     val color = piece.color
     val isOppositeColor =
@@ -204,7 +217,8 @@ object PossibleMoves {
             piece.kind == Rook
           }
         val attacks = (v: Vec2d, p: Piece) => getAttacks(v, p, state)
-        val allAttacks = getAllAttacks(state.pieces, color.opposite, attacks)
+        val allAttacks =
+          getAllAttacks(state.pieces, PieceColor.opposite(color), attacks)
         val isAttackOn = (pos: Vec2d) => allAttacks.contains(pos)
         val castleMove = (kingPos: Vec2d, rookPos: Vec2d) =>
           Castling.getCastleKingMove(
@@ -225,24 +239,27 @@ object PossibleMoves {
     moves.filter { move =>
       val simulatedState = GameLogic.forceMove(move, state)
       val attacks = (v: Vec2d, p: Piece) => getAttacks(v, p, simulatedState)
-      val enemyAttacks =
-        getAllAttacks(simulatedState.pieces, color.opposite, attacks)
+      val enemyAttacks = getAllAttacks(
+        simulatedState.pieces,
+        PieceColor.opposite(color),
+        attacks
+      )
 
       !isKingUnderCheck(simulatedState.pieces, color, enemyAttacks)
     }
   }
 
-  def getMoves(pos: Vec2d, state: GameState) = state
+  def getMoves(pos: Vec2d, state: TrueGameState) = state
     .pieces
     .get(pos)
     .map(_getMoves(pos, _, state))
     .getOrElse(Set())
 
-  def getMoveTiles(pos: Vec2d, state: GameState): Map[Vec2d, GameMove] =
-    getMoves(pos: Vec2d, state: GameState)
+  def getMoveTiles(pos: Vec2d, state: TrueGameState): Map[Vec2d, GameMove] =
+    getMoves(pos: Vec2d, state: TrueGameState)
       .map {
         case m @ CastlingMove(kingMove, rookMove) => kingMove.to -> m
-        case m @ Move(piece, from, to)            => to -> m
+        case m @ TrueMove(piece, from, to)        => to -> m
       }
       .toMap
 }

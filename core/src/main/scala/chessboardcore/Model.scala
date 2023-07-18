@@ -12,6 +12,12 @@ object Model {
   sealed trait PieceColor
   case object White extends PieceColor
   case object Black extends PieceColor
+  object PieceColor {
+    def opposite(color: PieceColor): PieceColor = color match {
+      case White => Black
+      case Black => White
+    }
+  }
 
   case class Piece(color: PieceColor, kind: PieceKind)
 

@@ -1,9 +1,6 @@
 package example.game
 
-import example.models.King
-import example.models.Piece
-import example.models.PieceColor
-import example.models.Rook
+import chessboardcore.Model._
 import chessboardcore.Vec2d
 
 // assuming standard chessboard setup
@@ -64,8 +61,8 @@ object Castling {
         !arePiecesBetween && !isKingCheckedOnPath
     )(
       CastlingMove(
-        Move(Piece(King, color), kingPos, kingMove(kingPos, rookPos)),
-        Move(Piece(Rook, color), rookPos, rookMove(kingPos, rookPos))
+        TrueMove(Piece(color, King), kingPos, kingMove(kingPos, rookPos)),
+        TrueMove(Piece(color, Rook), rookPos, rookMove(kingPos, rookPos))
       )
     )
   }
