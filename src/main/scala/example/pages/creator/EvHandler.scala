@@ -185,7 +185,7 @@ object EvHandler {
     boardSize <- OptionT.liftF(IO(state.boardSize.now()))
     containerRef <- OptionT(IO(state.boardContainerRef.now()))
     canvasPos = getRelativePosition(e.e, containerRef)
-    canvasSize = state.canvasSize
+    canvasSize = AppModel.DefaultBoardCanvasSize
     tilePos <- OptionT
       .fromOption[IO](tileLogicPos(boardSize, canvasSize, canvasPos))
   } yield (tilePos)

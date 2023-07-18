@@ -1,10 +1,10 @@
 package example.pages.creator
 
 import com.raquo.laminar.api.L._
-import example.pages.creator.BoardModel.ElementRefChanged
-import example.pages.creator.BoardModel.PieceDragging
 import example.AppModel
 import example.components.DraggingPiece
+import example.pages.creator.BoardModel.ElementRefChanged
+import example.pages.creator.BoardModel.PieceDragging
 
 object CreatorPage {
   def component(dm: AppModel.DM): HtmlElement = {
@@ -19,7 +19,7 @@ object CreatorPage {
       EvHandler.handle(state, generalEv)
     }
     val boardData: BoardModel.Data = BoardModel.Data(
-      canvasSize = state.canvasSize,
+      canvasSize = AppModel.DefaultBoardCanvasSize,
       boardSize = state.boardSize.signal,
       placedPieces = state.placedPieces.signal,
       dm = dm
@@ -43,7 +43,7 @@ object CreatorPage {
     val data = DraggingPiece.Data(
       draggingPieceState = state.draggingPieceState.signal,
       boardSize = state.boardSize.signal,
-      canvasSize = state.canvasSize
+      canvasSize = AppModel.DefaultBoardCanvasSize
     )
 
     DraggingPiece.componentSignal(data)
