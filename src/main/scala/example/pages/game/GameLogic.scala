@@ -16,30 +16,33 @@ import example.Misc
 import chessboardcore.Model.PlayerState.Empty
 import chessboardcore.Model.PlayerState.Ready
 import chessboardcore.Model.PlayerState.Sitting
+import example.pages.creator.EvHandler
+import example.AppModel
 
 object GameLogic {
   case class Module(sendWsEventObserver: Observer[Model.WsEv])
 
-  def wireGamePage2(
+  def wire(
       events: EventStream[GamePage.Event],
       plSectionEvents: EventStream[PlayersSection.Event],
       boardCompEvents: EventStream[BoardComponent.Event],
       state: GamePage.State,
       ws: WebSocket[WsEv, WsEv]
-  )(implicit owner: Owner): Unit = {
-    ws.received.addObserver(Observer[Model.WsEv](e => handleWsEvent(e, state)))
-    events.addObserver(
-      Observer[GamePage.Event](e => handleEvent(e, state, ws.sendOne))
-    )
-    plSectionEvents.addObserver(
+  ): Seq[Binder.Base] = Seq(
+    ws.received.-->(Observer[Model.WsEv](e => handleWsEvent(e, state))),
+    events
+      .-->(Observer[GamePage.Event](e => handleEvent(e, state, ws.sendOne))),
+    plSectionEvents.-->(
       Observer[PlayersSection.Event](e =>
         handlePlSectionEvent(e, state, ws.sendOne)
       )
+    ),
+    boardCompEvents.-->(
+      Observer[BoardComponent.Event](e =>
+        handleBoardComponentEvent(e, state, ws.sendOne)
+      )
     )
-    boardCompEvents.addObserver(
-      Observer[BoardComponent.Event](e => handleBoardComponentEvent(e, state))
-    )
-  }
+  )
 
   private def handleWsEvent(e: WsEv, state: GamePage.State): Unit = e match {
     case WsEv(GameStateData(v)) =>
@@ -48,16 +51,11 @@ object GameLogic {
     case _ => ()
   }
 
-  private def pieces(board: Board): Map[Vec2d, BoardComponent.PieceUiModel] = {
-    board
-      .pieces
-      .map { p =>
-        val pos = p.pos
-        val pieceUiModel = BoardComponent.PieceUiModel(p.piece, Var(true))
-        (pos, pieceUiModel)
-      }
-      .toMap
-  }
+  private def pieces(board: Board): Map[Vec2d, BoardComponent.PieceUiModel] =
+    board.pieces.map(p => (p.pos, createPieceModel(p.piece))).toMap
+
+  private def createPieceModel(piece: Piece): BoardComponent.PieceUiModel =
+    BoardComponent.PieceUiModel(piece, Var(true))
 
   private def handleEvent(
       e: GamePage.Event,
@@ -79,7 +77,8 @@ object GameLogic {
 
   private def handleBoardComponentEvent(
       e: BoardComponent.Event,
-      state: GamePage.State
+      state: GamePage.State,
+      sendWsEvent: WsEv => Unit
   ): Unit = {
     e match {
       case ElementRefChanged(v) => state.boardComponentRef.set(Some(v))
@@ -90,11 +89,15 @@ object GameLogic {
         val currentTurn = state.gameState.now().turn
         val isMyPiece = (col: PieceColor) =>
           playerId(state, col).map(_ == myPlayerId).getOrElse(false)
+        val sendMoveEvent =
+          (toPos: Vec2d) => sendWsEvent(WsEv(Move(myPlayerId, fromPos, toPos)))
 
         (pieceOpt, gameStarted) match {
-          case (Some(piece), true) => if (isMyPiece(piece.piece.color))
-              handlePieceDragging(e, piece, state)
-            else ()
+          case (Some(piece), true) => if (isMyPiece(piece.piece.color)) {
+              val _movePiece =
+                (to: Vec2d) => movePiece(state, fromPos, to, piece)
+              handlePieceDragging(e, piece, state, sendMoveEvent, _movePiece)
+            } else ()
           case _ => ()
         }
     }
@@ -120,7 +123,9 @@ object GameLogic {
   private def handlePieceDragging(
       e: Dragging.Event,
       pieceModel: BoardComponent.PieceUiModel,
-      state: GamePage.State
+      state: GamePage.State,
+      sendMoveEvent: Vec2d => Unit,
+      movePiece: Vec2d => Unit
   ): Unit = {
     val _updatePieceDraggingState = () =>
       updatePieceDraggingState(state, e, Misc.pieceImgPath(pieceModel.piece))
@@ -133,6 +138,37 @@ object GameLogic {
       case DragEventKind.End =>
         pieceModel.isVisible.set(true)
         state.draggingPieceState.set(None)
+        val toPosOpt = tileLogicPos(state, e)
+        toPosOpt.foreach { toPos =>
+          movePiece(toPos)
+          sendMoveEvent(toPos)
+        }
+    }
+  }
+
+  // TODO: dup with EvHandler
+  private def movePiece(
+      state: GamePage.State,
+      fromPos: Vec2d,
+      toPos: Vec2d,
+      pieceUiModel: BoardComponent.PieceUiModel
+  ): Unit = {
+    state.pieces.update(v => v.removed(fromPos))
+    state.pieces.update(v => v.updated(toPos, pieceUiModel))
+  }
+
+  // TODO: dup with EvHandler
+  private def tileLogicPos(
+      state: GamePage.State,
+      e: Dragging.Event
+  ): Option[Vec2d] = {
+    val boardSize = state.gameState.now().board.size
+    val elementRefOpt = state.boardComponentRef.now()
+
+    elementRefOpt.flatMap { elementRef =>
+      val canvasSize = AppModel.DefaultBoardCanvasSize
+      val canvasPos = EvHandler.getRelativePosition(e.e, elementRef)
+      EvHandler.tileLogicPos(boardSize, canvasSize, canvasPos)
     }
   }
 

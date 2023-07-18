@@ -32,6 +32,8 @@ object TrueGameService {
       case PlayerReady(playerId) =>
         _updateGameState(s => handlePlayerReady(s, playerId))
 
+      // case Move(playerId, from, to) => todo()
+
       case _ => IO.pure(WsEv(Ok()))
     }
   }

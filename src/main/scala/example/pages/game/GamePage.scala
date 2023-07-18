@@ -39,19 +39,14 @@ object GamePage {
       .build()
 
     div(
+      GameLogic
+        .wire(bus.events, plSectionBus.events, boardBus.events, state, ws),
       cls("flex flex-row gap-4 m-4"),
       boardComponent(state, dm, boardBus.writer),
       playersSectionComponent(state, plSectionBus.writer),
       ws.connect,
       child <-- draggingPieceComponentSignal(state),
       onMountCallback { ctx =>
-        GameLogic.wireGamePage2(
-          bus.events,
-          plSectionBus.events,
-          boardBus.events,
-          state,
-          ws
-        )(ctx.owner)
         bus.emit(RequestGameState())
       }
     )
