@@ -10,6 +10,7 @@ import example.components.DraggingPiece
 import io.circe.generic.auto._
 import io.laminext.websocket.WebSocket
 import io.laminext.websocket.circe._
+import org.scalajs.dom
 
 object GamePage {
   sealed trait Event
@@ -18,17 +19,20 @@ object GamePage {
   case class State(
       gameState: Var[GameState],
       playerId: String,
-      draggingPieceState: Var[Option[DraggingPiece.DraggingPieceState]]
+      draggingPieceState: Var[Option[DraggingPiece.DraggingPieceState]],
+      boardComponentRef: Var[Option[dom.Element]],
+      pieces: Var[Map[Vec2d, BoardComponent.PieceUiModel]]
   )
 
   private def createState(playerId: String) =
-    State(Var(GameState.empty), playerId, Var(None))
+    State(Var(GameState.empty), playerId, Var(None), Var(None), Var(Map()))
 
   def component(gameId: String, dm: AppModel.DM): Element = {
     val playerId = chessboardcore.Utils.unsafeCreateId()
     val state = createState(playerId)
     val bus = new EventBus[Event]
     val plSectionBus = new EventBus[PlayersSection.Event]
+    val boardBus = new EventBus[BoardComponent.Event]
     val ws: WebSocket[WsEv, WsEv] = WebSocket
       .url(HttpClient.gameWebSockerUrl(gameId))
       .json[WsEv, WsEv]
@@ -36,26 +40,32 @@ object GamePage {
 
     div(
       cls("flex flex-row gap-4 m-4"),
-      boardComponent(state, dm),
+      boardComponent(state, dm, boardBus.writer),
       playersSectionComponent(state, plSectionBus.writer),
       ws.connect,
       child <-- draggingPieceComponentSignal(state),
       onMountCallback { ctx =>
-        GameLogic
-          .wireGamePage2(bus.events, plSectionBus.events, state, ws)(ctx.owner)
+        GameLogic.wireGamePage2(
+          bus.events,
+          plSectionBus.events,
+          boardBus.events,
+          state,
+          ws
+        )(ctx.owner)
         bus.emit(RequestGameState())
       }
     )
   }
 
-  private def boardComponent(state: State, dm: AppModel.DM): Element = {
-    val handler = Observer[BoardComponent.Event] { e =>
-      println(e)
-    }
+  private def boardComponent(
+      state: State,
+      dm: AppModel.DM,
+      handler: Observer[BoardComponent.Event]
+  ): Element = {
     val boardData = BoardComponent.Data(
       canvasSize = AppModel.DefaultBoardCanvasSize,
       boardSize = state.gameState.signal.map(_.board.size),
-      placedPieces = state.gameState.signal.map(gs => pieces(gs.board)),
+      placedPieces = state.pieces.signal,
       dm = dm
     )
 
@@ -75,17 +85,6 @@ object GamePage {
     )
 
     PlayersSection.component(data, plSectionObs)
-  }
-
-  private def pieces(board: Board): Map[Vec2d, BoardComponent.PieceUiModel] = {
-    board
-      .pieces
-      .map { p =>
-        val pos = p.pos
-        val pieceUiModel = BoardComponent.PieceUiModel(p.piece, Var(true))
-        (pos, pieceUiModel)
-      }
-      .toMap
   }
 
   private def draggingPieceComponentSignal(state: State): Signal[Node] = {
