@@ -10,14 +10,14 @@ object GameLogic {
   case class Module(sendWsEventObserver: Observer[Model.WsEv])
 
   def wireGamePage2(
-      events: EventStream[GamePage2.Event],
+      events: EventStream[GamePage.Event],
       plSectionEvents: EventStream[PlayersSection.Event],
-      state: GamePage2.State,
+      state: GamePage.State,
       ws: WebSocket[WsEv, WsEv]
   )(implicit owner: Owner): Unit = {
     ws.received.addObserver(Observer[Model.WsEv](e => handleWsEvent(e, state)))
     events.addObserver(
-      Observer[GamePage2.Event](e => handleEvent(e, state, ws.sendOne))
+      Observer[GamePage.Event](e => handleEvent(e, state, ws.sendOne))
     )
     plSectionEvents.addObserver(
       Observer[PlayersSection.Event](e =>
@@ -26,22 +26,22 @@ object GameLogic {
     )
   }
 
-  def handleWsEvent(e: WsEv, state: GamePage2.State): Unit = e match {
+  def handleWsEvent(e: WsEv, state: GamePage.State): Unit = e match {
     case WsEv(GameStateData(v)) => state.gameState.set(v)
     case _                      => ()
   }
 
   def handleEvent(
-      e: GamePage2.Event,
-      state: GamePage2.State,
+      e: GamePage.Event,
+      state: GamePage.State,
       sendWsEvent: WsEv => Unit
   ): Unit = e match {
-    case GamePage2.RequestGameState() => sendWsEvent(WsEv(GetGameState()))
+    case GamePage.RequestGameState() => sendWsEvent(WsEv(GetGameState()))
   }
 
   def handlePlSectionEvent(
       e: PlayersSection.Event,
-      state: GamePage2.State,
+      state: GamePage.State,
       sendWsEvent: WsEv => Unit
   ): Unit = e match {
     case PlayersSection.PlayerSit(color) =>

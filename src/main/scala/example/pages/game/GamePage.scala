@@ -8,11 +8,11 @@ import example.AppModel
 import example.HttpClient
 import example.pages.creator.BoardModel
 import example.pages.creator.ExBoard
+import io.circe.generic.auto._
 import io.laminext.websocket.WebSocket
 import io.laminext.websocket.circe._
-import io.circe.generic.auto._
 
-object GamePage2 {
+object GamePage {
   sealed trait Event
   case class RequestGameState() extends Event
 

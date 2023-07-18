@@ -8,7 +8,7 @@ import example.pages.home.HomePage
 import org.http4s.client.Client
 import org.http4s.dom._
 import org.scalajs.dom
-import example.pages.game.GamePage2
+import example.pages.game.GamePage
 
 object Main extends App {
   val client: Client[IO] = FetchClientBuilder[IO].create
@@ -29,7 +29,7 @@ object Main extends App {
         CreatorPage.component(appState.dm)
       }
       .collect[PageKey.Game] { key =>
-        GamePage2.component(key.id, appState.dm)
+        GamePage.component(key.id, appState.dm)
       }
   }
 
