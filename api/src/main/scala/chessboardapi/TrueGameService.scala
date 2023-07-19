@@ -2,8 +2,8 @@ package chessboardapi
 
 import cats.effect.IO
 import cats.effect.kernel.Ref
-import chessboardcore.Model.PlayerState.Empty
 import chessboardcore.Model._
+import chessboardcore.Model.PlayerState._
 import io.circe.generic.auto._
 import monocle.AppliedLens
 import monocle.syntax.all._
@@ -75,8 +75,8 @@ object TrueGameService {
 
   private def areBothPlayersReady(gs: GameState): Boolean =
     (gs.whitePlayerState, gs.blackPlayerState) match {
-      case (PlayerState.Ready(_), PlayerState.Ready(_)) => true
-      case _                                            => false
+      case (Some(PlayerState(_, Ready)), Some(PlayerState(_, Ready))) => true
+      case _                                                          => false
     }
 
   private def updateGameState(
@@ -94,8 +94,8 @@ object TrueGameService {
     val playerLens = playerByColor(color, state)
 
     playerLens.get match {
-      case Empty => playerLens.replace(PlayerState.Sitting(playerId))
-      case _     => state
+      case None => playerLens.replace(Some(PlayerState(playerId, Sitting)))
+      case _    => state
     }
   }
 
@@ -103,10 +103,14 @@ object TrueGameService {
     import PlayerState._
 
     (state.gameState.whitePlayerState, state.gameState.blackPlayerState) match {
-      case (Sitting(id), _) if id == playerId =>
-        state.focus(_.gameState.whitePlayerState).replace(Ready(id))
-      case (_, Sitting(id)) if id == playerId =>
-        state.focus(_.gameState.blackPlayerState).replace(Ready(id))
+      case (Some(PlayerState(id, Sitting)), _) if id == playerId =>
+        state
+          .focus(_.gameState.whitePlayerState)
+          .replace(Some(PlayerState(id, Ready)))
+      case (_, Some(PlayerState(id, Sitting))) if id == playerId =>
+        state
+          .focus(_.gameState.blackPlayerState)
+          .replace(Some(PlayerState(id, Ready)))
       case _ => state
     }
   }
@@ -114,7 +118,7 @@ object TrueGameService {
   private def playerByColor(
       color: PieceColor,
       state: State
-  ): AppliedLens[State, PlayerState] = {
+  ): AppliedLens[State, Option[PlayerState]] = {
     color match {
       case Black => state.focus(_.gameState.blackPlayerState)
       case White => state.focus(_.gameState.whitePlayerState)

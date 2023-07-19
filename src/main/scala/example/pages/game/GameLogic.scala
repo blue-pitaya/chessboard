@@ -13,9 +13,6 @@ import example.pages.game.PlayersSection.PlayerReady
 import io.laminext.websocket.WebSocket
 import example.components.DraggingPiece
 import example.Misc
-import chessboardcore.Model.PlayerState.Empty
-import chessboardcore.Model.PlayerState.Ready
-import chessboardcore.Model.PlayerState.Sitting
 import example.pages.creator.EvHandler
 import example.AppModel
 import chessboardcore.gamelogic.MoveLogic
@@ -116,16 +113,12 @@ object GameLogic {
       state: GamePage.State,
       color: PieceColor
   ): Option[String] = {
-    val plState = color match {
+    val plStateOpt = color match {
       case Black => state.gameState.now().blackPlayerState
       case White => state.gameState.now().whitePlayerState
     }
 
-    plState match {
-      case Empty             => None
-      case Ready(playerId)   => Some(playerId)
-      case Sitting(playerId) => Some(playerId)
-    }
+    plStateOpt.map(_.id)
   }
 
   private def handlePieceDragging(

@@ -28,13 +28,11 @@ object Model {
     def empty = Board(size = Vec2d(0, 0), pieces = List())
   }
 
-  sealed trait PlayerState
+  case class PlayerState(id: String, kind: PlayerState.Kind)
   object PlayerState {
-    case object Empty extends PlayerState
-    case class Sitting(playerId: String) extends PlayerState
-    case class Ready(playerId: String) extends PlayerState
-
-    def default = Empty
+    sealed trait Kind
+    case object Sitting extends Kind
+    case object Ready extends Kind
   }
 
   sealed trait GameOverState
@@ -45,21 +43,14 @@ object Model {
 
   case class GameState(
       board: Board,
-      whitePlayerState: PlayerState,
-      blackPlayerState: PlayerState,
+      whitePlayerState: Option[PlayerState],
+      blackPlayerState: Option[PlayerState],
       gameStarted: Boolean,
       turn: PieceColor,
       gameOver: Option[GameOverState]
   )
   object GameState {
-    def empty = GameState(
-      Board.empty,
-      PlayerState.default,
-      PlayerState.default,
-      false,
-      White,
-      None
-    )
+    def empty = GameState(Board.empty, None, None, false, White, None)
   }
 
   // web socket
