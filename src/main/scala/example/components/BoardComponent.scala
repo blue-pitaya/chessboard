@@ -23,7 +23,8 @@ object BoardComponent {
       canvasSize: Vec2d,
       boardSize: Signal[Vec2d],
       placedPieces: Signal[Map[Vec2d, PieceUiModel]],
-      dm: DM
+      dm: DM,
+      highlightedTiles: Signal[Set[Vec2d]]
   )
 
   def create(data: Data, handler: Observer[Event]): Element = {
@@ -39,7 +40,7 @@ object BoardComponent {
           pos = pos,
           boardSize = boardSize,
           canvasSize = data.canvasSize,
-          isHighlighted = Val(false)
+          isHighlighted = data.highlightedTiles.map(_.contains(pos))
         )
       )
     }

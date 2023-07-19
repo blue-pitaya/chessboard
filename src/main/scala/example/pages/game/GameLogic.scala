@@ -18,6 +18,7 @@ import chessboardcore.Model.PlayerState.Ready
 import chessboardcore.Model.PlayerState.Sitting
 import example.pages.creator.EvHandler
 import example.AppModel
+import chessboardcore.gamelogic.MoveLogic
 
 object GameLogic {
   case class Module(sendWsEventObserver: Observer[Model.WsEv])
@@ -96,7 +97,14 @@ object GameLogic {
           case (Some(piece), true) => if (isMyPiece(piece.piece.color)) {
               val _movePiece =
                 (to: Vec2d) => movePiece(state, fromPos, to, piece)
-              handlePieceDragging(e, piece, state, sendMoveEvent, _movePiece)
+              handlePieceDragging(
+                e,
+                fromPos,
+                piece,
+                state,
+                sendMoveEvent,
+                _movePiece
+              )
             } else ()
           case _ => ()
         }
@@ -122,11 +130,13 @@ object GameLogic {
 
   private def handlePieceDragging(
       e: Dragging.Event,
+      pos: Vec2d,
       pieceModel: BoardComponent.PieceUiModel,
       state: GamePage.State,
       sendMoveEvent: Vec2d => Unit,
       movePiece: Vec2d => Unit
   ): Unit = {
+    lazy val board = state.gameState.now().board
     val _updatePieceDraggingState = () =>
       updatePieceDraggingState(state, e, Misc.pieceImgPath(pieceModel.piece))
 
@@ -134,8 +144,11 @@ object GameLogic {
       case DragEventKind.Start =>
         pieceModel.isVisible.set(false)
         _updatePieceDraggingState()
+        val possibleMoves = MoveLogic.possibleMoves(board, pos)
+        state.highlightedTiles.set(possibleMoves.toSet)
       case DragEventKind.Move => _updatePieceDraggingState()
       case DragEventKind.End =>
+        state.highlightedTiles.set(Set())
         pieceModel.isVisible.set(true)
         state.draggingPieceState.set(None)
         val toPosOpt = tileLogicPos(state, e)

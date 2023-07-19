@@ -32,7 +32,8 @@ object CreatorPage {
       canvasSize = AppModel.DefaultBoardCanvasSize,
       boardSize = state.boardSize.signal,
       placedPieces = state.placedPieces.signal,
-      dm = dm
+      dm = dm,
+      highlightedTiles = Val(Set())
     )
     val piecePickerData = PiecePickerModel.Data(dm)
 

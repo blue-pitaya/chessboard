@@ -21,11 +21,18 @@ object GamePage {
       playerId: String,
       draggingPieceState: Var[Option[DraggingPiece.DraggingPieceState]],
       boardComponentRef: Var[Option[dom.Element]],
-      pieces: Var[Map[Vec2d, BoardComponent.PieceUiModel]]
+      pieces: Var[Map[Vec2d, BoardComponent.PieceUiModel]],
+      highlightedTiles: Var[Set[Vec2d]]
   )
 
-  private def createState(playerId: String) =
-    State(Var(GameState.empty), playerId, Var(None), Var(None), Var(Map()))
+  private def createState(playerId: String) = State(
+    Var(GameState.empty),
+    playerId,
+    Var(None),
+    Var(None),
+    Var(Map()),
+    Var(Set())
+  )
 
   def component(gameId: String, dm: AppModel.DM): Element = {
     val playerId = chessboardcore.Utils.unsafeCreateId()
@@ -61,7 +68,8 @@ object GamePage {
       canvasSize = AppModel.DefaultBoardCanvasSize,
       boardSize = state.gameState.signal.map(_.board.size),
       placedPieces = state.pieces.signal,
-      dm = dm
+      dm = dm,
+      highlightedTiles = state.highlightedTiles.signal
     )
 
     BoardComponent.create(boardData, handler)

@@ -7,6 +7,8 @@ import chessboardcore.Model._
 // Pieces can't move if doing so will make king checked
 // allow pawn only if rank is 2 (for white) or n-1 (for black) (in 1..n)
 
+//TODO: can be sets all the way
+
 object MoveLogic {
 
   def pawnMoves(
@@ -174,27 +176,29 @@ object MoveLogic {
       .flatten
   }
 
-  def canMove(board: Board, from: Vec2d, to: Vec2d): Boolean = {
+  def possibleMoves(board: Board, pos: Vec2d): List[Vec2d] = {
     val pieces = board.pieces.map(p => (p.pos, p.piece)).toMap
     val pieceOn = (v: Vec2d) => pieces.get(v)
     val tileExists = (v: Vec2d) =>
       (v.x >= 0 && v.y >= 0 && v.x < board.size.x && v.y < board.size.y)
 
-    pieceOn(from) match {
-      case None => false
+    pieceOn(pos) match {
+      case None => List()
       case Some(Piece(color, kind)) =>
-        lazy val _bishopMoves = bishopMoves(from, color, tileExists, pieceOn)
-        lazy val _rookMoves = rookMoves(from, color, tileExists, pieceOn)
-        val possibleMoves = kind match {
-          case King   => kingMoves(from, color, tileExists, pieceOn)
+        lazy val _bishopMoves = bishopMoves(pos, color, tileExists, pieceOn)
+        lazy val _rookMoves = rookMoves(pos, color, tileExists, pieceOn)
+
+        kind match {
+          case King   => kingMoves(pos, color, tileExists, pieceOn)
           case Rook   => _rookMoves
-          case Knight => knightMoves(from, color, tileExists, pieceOn)
+          case Knight => knightMoves(pos, color, tileExists, pieceOn)
           case Bishop => _bishopMoves
           case Queen  => queenMoves(_bishopMoves, _rookMoves)
-          case Pawn => pawnMoves(from, color, board.size.y, tileExists, pieceOn)
+          case Pawn => pawnMoves(pos, color, board.size.y, tileExists, pieceOn)
         }
-
-        possibleMoves.contains(to)
     }
   }
+
+  def canMove(board: Board, from: Vec2d, to: Vec2d): Boolean =
+    possibleMoves(board, from).contains(to)
 }

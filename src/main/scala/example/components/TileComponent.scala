@@ -3,6 +3,7 @@ package example.components
 import com.raquo.laminar.api.L._
 import chessboardcore.Vec2d
 
+//TODO: signals all way down?
 object TileComponent {
   case class Data(
       pos: Vec2d,
