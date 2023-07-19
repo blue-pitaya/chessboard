@@ -25,7 +25,12 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies += "org.typelevel" %%% "cats-core" % "2.8.0",
     libraryDependencies += "org.typelevel" %%% "cats-effect" % "3.3.14",
     libraryDependencies += "io.circe" %%% "circe-generic" % CirceVersion,
-    libraryDependencies += "io.circe" %%% "circe-parser" % CirceVersion
+    libraryDependencies += "io.circe" %%% "circe-parser" % CirceVersion,
+    libraryDependencies ++=
+      Seq(
+        "dev.optics" %%% "monocle-core" % MonocleVersion,
+        "dev.optics" %%% "monocle-macro" % MonocleVersion
+      )
   )
   .jsSettings(
     scalaJSLinkerConfig ~=

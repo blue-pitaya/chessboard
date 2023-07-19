@@ -1,7 +1,8 @@
 package chessboardcore.gamelogic
 
-import chessboardcore.Vec2d
 import chessboardcore.Model._
+import chessboardcore.Vec2d
+import monocle.syntax.all._
 
 // Standard chess moves, but no en passant or castling for now
 // Pieces can't move if doing so will make king checked
@@ -11,7 +12,7 @@ import chessboardcore.Model._
 
 object MoveLogic {
 
-  def pawnMoves(
+  private def pawnMoves(
       pos: Vec2d,
       color: PieceColor,
       boardHeight: Int,
@@ -65,7 +66,7 @@ object MoveLogic {
     f(List(), pos + step)
   }
 
-  def rookMoves(
+  private def rookMoves(
       pos: Vec2d,
       color: PieceColor,
       tileExists: Vec2d => Boolean,
@@ -86,7 +87,7 @@ object MoveLogic {
       .flatten
   }
 
-  def knightMoves(
+  private def knightMoves(
       pos: Vec2d,
       color: PieceColor,
       tileExists: Vec2d => Boolean,
@@ -118,7 +119,7 @@ object MoveLogic {
       .flatten
   }
 
-  def bishopMoves(
+  private def bishopMoves(
       pos: Vec2d,
       color: PieceColor,
       tileExists: Vec2d => Boolean,
@@ -139,12 +140,12 @@ object MoveLogic {
       .flatten
   }
 
-  def queenMoves(
+  private def queenMoves(
       bishopMoves: List[Vec2d],
       rookMoves: List[Vec2d]
   ): List[Vec2d] = bishopMoves ++ rookMoves
 
-  def kingMoves(
+  private def kingMoves(
       pos: Vec2d,
       color: PieceColor,
       tileExists: Vec2d => Boolean,
@@ -176,29 +177,62 @@ object MoveLogic {
       .flatten
   }
 
-  def possibleMoves(board: Board, pos: Vec2d): List[Vec2d] = {
+  private def simulateMove(board: Board, from: Vec2d, to: Vec2d): Board = {
+    lazy val lens = board.focus(_.pieces)
+
+    board.pieces.find(p => p.pos == from) match {
+      case None => board
+      case Some(placedPiece) =>
+        val nextPlacedPiece = PlacedPiece(to, placedPiece.piece)
+        lens.modify(_.filter(p => p.pos != from).appended(nextPlacedPiece))
+    }
+  }
+
+  def possibleMoves(board: Board, from: Vec2d): List[Vec2d] = {
     val pieces = board.pieces.map(p => (p.pos, p.piece)).toMap
     val pieceOn = (v: Vec2d) => pieces.get(v)
     val tileExists = (v: Vec2d) =>
       (v.x >= 0 && v.y >= 0 && v.x < board.size.x && v.y < board.size.y)
+    val pieceOpt = pieceOn(from)
 
-    pieceOn(pos) match {
+    pieceOpt match {
       case None => List()
       case Some(Piece(color, kind)) =>
-        lazy val _bishopMoves = bishopMoves(pos, color, tileExists, pieceOn)
-        lazy val _rookMoves = rookMoves(pos, color, tileExists, pieceOn)
-
-        kind match {
-          case King   => kingMoves(pos, color, tileExists, pieceOn)
+        lazy val _bishopMoves = bishopMoves(from, color, tileExists, pieceOn)
+        lazy val _rookMoves = rookMoves(from, color, tileExists, pieceOn)
+        val moves = kind match {
+          case King   => kingMoves(from, color, tileExists, pieceOn)
           case Rook   => _rookMoves
-          case Knight => knightMoves(pos, color, tileExists, pieceOn)
+          case Knight => knightMoves(from, color, tileExists, pieceOn)
           case Bishop => _bishopMoves
           case Queen  => queenMoves(_bishopMoves, _rookMoves)
-          case Pawn => pawnMoves(pos, color, board.size.y, tileExists, pieceOn)
+          case Pawn => pawnMoves(from, color, board.size.y, tileExists, pieceOn)
+        }
+
+        val kingOpt = board.pieces.find(p => p.piece.color == color)
+
+        kingOpt match {
+          case None => moves
+          case Some(king) => moves.filter { toPos =>
+              val _board = simulateMove(board, from, toPos)
+              isKingChecked(_board, king)
+            }
         }
     }
   }
 
   def canMove(board: Board, from: Vec2d, to: Vec2d): Boolean =
     possibleMoves(board, from).contains(to)
+
+  def isKingChecked(board: Board, king: PlacedPiece): Boolean =
+    allPossibleMoves(board, p => p.piece.color != king.piece.color)
+      .contains(king.pos)
+
+  def allPossibleMoves(
+      board: Board,
+      pieceFn: PlacedPiece => Boolean
+  ): List[Vec2d] = board
+    .pieces
+    .filter(pieceFn)
+    .flatMap(p => MoveLogic.possibleMoves(board, p.pos))
 }

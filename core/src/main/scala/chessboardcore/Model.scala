@@ -37,12 +37,19 @@ object Model {
     def default = Empty
   }
 
+  sealed trait GameOverState
+  object GameOverState {
+    case class WinFor(color: PieceColor, reason: String) extends GameOverState
+    case class Draw(reason: String) extends GameOverState
+  }
+
   case class GameState(
       board: Board,
       whitePlayerState: PlayerState,
       blackPlayerState: PlayerState,
       gameStarted: Boolean,
-      turn: PieceColor
+      turn: PieceColor,
+      gameOver: Option[GameOverState]
   )
   object GameState {
     def empty = GameState(
@@ -50,7 +57,8 @@ object Model {
       PlayerState.default,
       PlayerState.default,
       false,
-      White
+      White,
+      None
     )
   }
 
