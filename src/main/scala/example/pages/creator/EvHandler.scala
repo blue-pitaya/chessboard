@@ -214,8 +214,7 @@ object EvHandler {
       canvasPos: Vec2d
   ): Option[Vec2d] = {
     val tileSize = Logic.tileSize(boardSize, canvasSize)
-    val boardOffset = BoardComponent
-      .boardOffset(tileSize, boardSize, canvasSize)
+    val boardOffset = Logic.boardOffset(tileSize, boardSize, canvasSize)
     val onBoardPos = (canvasPos - boardOffset)
     val pos =
       Vec2f(onBoardPos.x.toDouble / tileSize, onBoardPos.y.toDouble / tileSize)

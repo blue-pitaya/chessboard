@@ -31,15 +31,22 @@ object BoardComponent {
 
     val _tileSize = (bs: BoardSize) => Logic.tileSize(bs, canvasSize)
     val _tileCanvasPos =
-      (bs: BoardSize) => (pos: BoardPos) => tileCanvasPos(canvasSize, bs, pos)
-    val _tileComponent = (boardSize: BoardSize) =>
-      (pos: BoardPos) => {
-        val tileSize = _tileSize(boardSize)
-        tileComponent(_tileCanvasPos(boardSize), tileSize, pos)
-      }
-    val _tileComponents =
-      (bs: BoardSize) => tileComponents(_tileComponent(bs), bs)
-    val _tilesSignal = tilesSignal(_tileComponents, data.boardSize)
+      (bs: BoardSize, pos: BoardPos) => Logic.tileCanvasPos(canvasSize, bs, pos)
+
+    val tileComponent = (boardSize: BoardSize, pos: BoardPos) => {
+      TileComponent.create(
+        TileComponent.Data(
+          pos = pos,
+          boardSize = boardSize,
+          canvasSize = data.canvasSize,
+          isHighlighted = Val(false)
+        )
+      )
+    }
+    val tilesSignal = data
+      .boardSize
+      .map(bs => tileComponents((pos: Vec2d) => tileComponent(bs, pos), bs))
+
     val _placedPieceDraggingBindings =
       (pos: BoardPos) => placedPieceDraggingBindings(pos, data.dm, handler)
 
@@ -55,7 +62,7 @@ object BoardComponent {
       // TODO: should take canvasSize, but there is no styleProp for svg
       // and interpolation string for tailwind cls is broken
       svg.cls("min-w-[800px] h-[800px] bg-stone-800"),
-      svg.g(children <-- _tilesSignal),
+      svg.g(children <-- tilesSignal),
       svg.g(children <-- _placedPiecesSignal),
       onMountCallback(ctx =>
         handler.onNext(ElementRefChanged(ctx.thisNode.ref))
@@ -81,7 +88,7 @@ object BoardComponent {
       boardSizeSignal: Signal[Vec2d],
       placedPiecesSignal: Signal[Map[Vec2d, PieceUiModel]],
       tileSize: BoardSize => Int,
-      canvasPos: BoardSize => BoardPos => Vec2d,
+      canvasPos: (BoardSize, BoardPos) => Vec2d,
       draggingBindings: BoardPos => Seq[Binder.Base]
   ): Signal[List[Element]] = {
     placedPiecesSignal
@@ -91,7 +98,7 @@ object BoardComponent {
           case (pos, pieceUiModel) =>
             val imgPath = Misc.pieceImgPath(pieceUiModel.piece)
             placedPieceComponent(
-              canvasPos(boardSize)(pos),
+              canvasPos(boardSize, pos),
               tileSize(boardSize),
               imgPath,
               pieceUiModel.isVisible.signal,
@@ -141,55 +148,12 @@ object BoardComponent {
     )
   }
 
-  def tilesSignal(
-      tileComponents: Vec2d => List[Element],
-      size: Signal[Vec2d]
-  ): Signal[List[Element]] = size.map(tileComponents)
-
   def tileComponents(
       tileComponent: Vec2d => Element,
       boardSize: Vec2d
   ): List[Element] = {
     val tileLogicPositions = Vec2d.matrix(boardSize)
     tileLogicPositions.map(tileComponent)
-  }
-
-  def tileComponent(
-      tileCanvasPos: Vec2d => Vec2d,
-      tileSize: Int,
-      logicPos: Vec2d
-  ): Element = {
-    val pos = tileCanvasPos(logicPos)
-    val size = tileSize
-    val bgColor = tileColor(logicPos)
-
-    svg.rect(
-      svg.x(pos.x.toString()),
-      svg.y(pos.y.toString()),
-      svg.width(size.toString()),
-      svg.height(size.toString()),
-      svg.fill(bgColor)
-    )
-  }
-
-  def tileCanvasPos(canvasSize: Vec2d, boardSize: Vec2d, pos: Vec2d): Vec2d = {
-    val _tileSize = Logic.tileSize(boardSize, canvasSize)
-    val _boardOffset = boardOffset(_tileSize, boardSize, canvasSize)
-    val x = pos.x * _tileSize
-    val y = (canvasSize.y - _tileSize) - (pos.y * _tileSize)
-
-    Vec2d(_boardOffset.x + x, y - _boardOffset.y)
-  }
-
-  def boardOffset(tileSize: Int, boardSize: Vec2d, canvasSize: Vec2d): Vec2d =
-    (canvasSize - (boardSize * tileSize)) / 2
-
-  def tileColor(pos: Vec2d): String = {
-    val blackTileColor = "#b58863"
-    val whiteTileColor = "#f0d9b5"
-
-    if ((pos.x + pos.y) % 2 == 0) blackTileColor
-    else whiteTileColor
   }
 
 }
