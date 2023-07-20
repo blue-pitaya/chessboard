@@ -31,12 +31,18 @@ object Model {
     def empty = Board(size = Vec2d(0, 0), pieces = Map())
   }
 
-  // FIXME
   implicit val vec2dKeyEncoder = new KeyEncoder[Vec2d] {
-    override def apply(key: Vec2d): String = ???
+    override def apply(key: Vec2d): String = s"${key.x},${key.y}"
   }
   implicit val vec2dKeyDecoder = new KeyDecoder[Vec2d] {
-    override def apply(key: String): Option[Vec2d] = ???
+    override def apply(key: String): Option[Vec2d] =
+      key.split(',').toList match {
+        case x :: y :: Nil => for {
+            _x <- x.toIntOption
+            _y <- y.toIntOption
+          } yield (Vec2d(_x, _y))
+        case _ => None
+      }
   }
 
   case class PlayerState(id: String, kind: PlayerState.Kind)
