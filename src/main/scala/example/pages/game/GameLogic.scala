@@ -70,7 +70,8 @@ object GameLogic {
   ): Unit = e match {
     case PlayersSection.PlayerSit(color) =>
       sendWsEvent(WsEv(PlayerSit(state.playerId, color)))
-    case PlayerReady() => sendWsEvent(WsEv(Model.PlayerReady(state.playerId)))
+    case PlayerReady(color) =>
+      sendWsEvent(WsEv(Model.PlayerReady(state.playerId, color)))
   }
 
   private def handleBoardComponentEvent(
@@ -112,14 +113,7 @@ object GameLogic {
   private def playerId(
       state: GamePage.State,
       color: PieceColor
-  ): Option[String] = {
-    val plStateOpt = color match {
-      case Black => state.gameState.now().blackPlayerState
-      case White => state.gameState.now().whitePlayerState
-    }
-
-    plStateOpt.map(_.id)
-  }
+  ): Option[String] = state.gameState.now().players.get(color).map(_.id)
 
   private def handlePieceDragging(
       e: Dragging.Event,

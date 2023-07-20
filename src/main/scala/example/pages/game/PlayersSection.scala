@@ -10,7 +10,7 @@ import example.Styles
 object PlayersSection {
   sealed trait Event
   case class PlayerSit(color: PieceColor) extends Event
-  case class PlayerReady() extends Event
+  case class PlayerReady(color: PieceColor) extends Event
 
   case class Data(
       myPlayerId: String,
@@ -92,7 +92,7 @@ object PlayersSection {
         button(
           Styles.btnCls,
           "I'm ready",
-          onClick.mapTo(PlayerReady()) --> handler
+          onClick.mapTo(PlayerReady(color)) --> handler
         )
       case Some(PlayerState(_, Sitting)) =>
         div("Waiting for player to be ready")

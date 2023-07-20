@@ -1,5 +1,8 @@
 package chessboardcore
 
+import io.circe.KeyEncoder
+import io.circe.KeyDecoder
+
 object Model {
   sealed trait PieceKind
   case object Pawn extends PieceKind
@@ -43,22 +46,39 @@ object Model {
 
   case class GameState(
       board: Board,
-      whitePlayerState: Option[PlayerState],
-      blackPlayerState: Option[PlayerState],
+      players: Map[PieceColor, PlayerState],
       gameStarted: Boolean,
       turn: PieceColor,
       gameOver: Option[GameOverState]
   )
   object GameState {
-    def empty = GameState(Board.empty, None, None, false, White, None)
+    def empty = GameState(Board.empty, Map(), false, White, None)
   }
 
+  implicit val pieceColorKeyEncoder: KeyEncoder[PieceColor] =
+    new KeyEncoder[PieceColor] {
+      override def apply(pc: PieceColor): String = pc match {
+        case White => White.toString()
+        case Black => Black.toString()
+      }
+    }
+  implicit val pieceColorKeyDecoder: KeyDecoder[PieceColor] =
+    new KeyDecoder[PieceColor] {
+      override def apply(key: String): Option[PieceColor] = key match {
+        case v if v == White.toString() => Some(White)
+        case v if v == Black.toString() => Some(Black)
+        case _                          => None
+      }
+    }
+
   // web socket
+  // TODO: should go to httpModel
   sealed trait WsEvent
   case class GetGameState() extends WsEvent
   case class GameStateData(v: GameState) extends WsEvent
   case class PlayerSit(playerId: String, color: PieceColor) extends WsEvent
-  case class PlayerReady(playerId: String) extends WsEvent
+  // FIXME: add color!
+  case class PlayerReady(playerId: String, color: PieceColor) extends WsEvent
   case class Move(playerId: String, from: Vec2d, to: Vec2d) extends WsEvent
   case class Ok() extends WsEvent
 

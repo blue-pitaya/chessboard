@@ -5,7 +5,6 @@ import cats.effect.kernel.Ref
 import chessboardcore.Model._
 import chessboardcore.Model.PlayerState._
 import io.circe.generic.auto._
-import monocle.AppliedLens
 import monocle.syntax.all._
 import org.http4s.Response
 import org.http4s.server.websocket.WebSocketBuilder2
@@ -31,8 +30,8 @@ object TrueGameService {
       case PlayerSit(playerId, color) =>
         _updateGameState(s => sitPlayer(color, playerId, s))
 
-      case PlayerReady(playerId) =>
-        _updateGameState(s => handlePlayerReady(s, playerId))
+      case PlayerReady(playerId, color) =>
+        _updateGameState(s => handlePlayerReady(s, playerId, color))
 
       case Move(playerId, from, to) =>
         _updateGameState(s => tryMakeMove(s, playerId, from, to))
@@ -63,8 +62,12 @@ object TrueGameService {
     }
   }
 
-  private def handlePlayerReady(state: State, playerId: String): State = {
-    val nextState = readyPlayer(playerId, state)
+  private def handlePlayerReady(
+      state: State,
+      playerId: String,
+      color: PieceColor
+  ): State = {
+    val nextState = readyPlayer(playerId, color, state)
     if (areBothPlayersReady(nextState.gameState)) startGame(nextState)
     else nextState
   }
@@ -73,11 +76,10 @@ object TrueGameService {
     .focus(_.gameState.gameStarted)
     .replace(true)
 
-  private def areBothPlayersReady(gs: GameState): Boolean =
-    (gs.whitePlayerState, gs.blackPlayerState) match {
-      case (Some(PlayerState(_, Ready)), Some(PlayerState(_, Ready))) => true
-      case _                                                          => false
-    }
+  private def areBothPlayersReady(gs: GameState): Boolean = gs
+    .players
+    .filter(_._2.kind != Ready)
+    .isEmpty
 
   private def updateGameState(
       stateRef: Ref[IO, State],
@@ -90,40 +92,28 @@ object TrueGameService {
       color: PieceColor,
       playerId: String,
       state: State
-  ): State = {
-    val playerLens = playerByColor(color, state)
+  ): State = state
+    .focus(_.gameState.players)
+    .modify(pls =>
+      pls.get(color) match {
+        case None => pls.updated(color, PlayerState(playerId, Sitting))
+        case _    => pls
+      }
+    )
 
-    playerLens.get match {
-      case None => playerLens.replace(Some(PlayerState(playerId, Sitting)))
-      case _    => state
-    }
-  }
-
-  private def readyPlayer(playerId: String, state: State): State = {
-    import PlayerState._
-
-    (state.gameState.whitePlayerState, state.gameState.blackPlayerState) match {
-      case (Some(PlayerState(id, Sitting)), _) if id == playerId =>
-        state
-          .focus(_.gameState.whitePlayerState)
-          .replace(Some(PlayerState(id, Ready)))
-      case (_, Some(PlayerState(id, Sitting))) if id == playerId =>
-        state
-          .focus(_.gameState.blackPlayerState)
-          .replace(Some(PlayerState(id, Ready)))
-      case _ => state
-    }
-  }
-
-  private def playerByColor(
+  private def readyPlayer(
+      playerId: String,
       color: PieceColor,
       state: State
-  ): AppliedLens[State, Option[PlayerState]] = {
-    color match {
-      case Black => state.focus(_.gameState.blackPlayerState)
-      case White => state.focus(_.gameState.whitePlayerState)
-    }
-  }
+  ): State = state
+    .focus(_.gameState.players)
+    .modify(pls =>
+      pls.get(color) match {
+        case Some(PlayerState(id, Sitting)) if id == playerId =>
+          pls.updated(color, PlayerState(id, Ready))
+        case _ => pls
+      }
+    )
 
   def create(board: Board): IO[Module] = {
     for {

@@ -81,8 +81,8 @@ object GamePage {
   ): Element = {
     val data = PlayersSection.Data(
       state.playerId,
-      state.gameState.signal.map(_.whitePlayerState),
-      state.gameState.signal.map(_.blackPlayerState),
+      state.gameState.signal.map(_.players.get(White)),
+      state.gameState.signal.map(_.players.get(Black)),
       state.gameState.signal.map(_.gameStarted),
       state.gameState.signal.map(_.turn)
     )
