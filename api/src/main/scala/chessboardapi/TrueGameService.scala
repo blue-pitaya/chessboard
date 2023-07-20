@@ -51,14 +51,13 @@ object TrueGameService {
     else state
   }
 
+  // TODO: dup?
   private def makeMove(state: State, from: Vec2d, to: Vec2d): State = {
     lazy val lens = state.focus(_.gameState.board.pieces)
 
-    state.gameState.board.pieces.find(p => p.pos == from) match {
-      case None => state
-      case Some(placedPiece) =>
-        val nextPlacedPiece = PlacedPiece(to, placedPiece.piece)
-        lens.modify(_.filter(p => p.pos != from).appended(nextPlacedPiece))
+    state.gameState.board.pieces.get(from) match {
+      case None        => state
+      case Some(piece) => lens.modify(_.removed(from).updated(to, piece))
     }
   }
 

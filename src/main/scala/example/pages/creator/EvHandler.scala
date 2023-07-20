@@ -75,11 +75,10 @@ object EvHandler {
     val piecesOnBoard = state
       .placedPieces
       .now()
-      .toList
       .collect {
         case (pos, pieceUiModel)
             if BoardComponent.isPosOnBoard(pos, boardSize) =>
-          PlacedPiece(pos = pos, piece = pieceUiModel.piece)
+          (pos, pieceUiModel.piece)
       }
 
     Board(size = boardSize, pieces = piecesOnBoard)

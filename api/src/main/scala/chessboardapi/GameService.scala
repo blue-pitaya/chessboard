@@ -21,13 +21,6 @@ object GameService {
   def createState(): IO[Ref[IO, State]] = Ref
     .of[IO, State](GameServiceModel.State(Map()))
 
-  def createExample(stateRef: Ref[IO, State]): IO[Unit] = {
-    for {
-      module <- TrueGameService.create(Examples.board)
-      _ <- stateRef.set(State(Map("abc" -> module)))
-    } yield ()
-  }
-
   def join(
       gameId: String,
       stateRef: Ref[IO, State],

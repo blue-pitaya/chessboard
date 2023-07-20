@@ -26,9 +26,17 @@ object Model {
 
   case class PlacedPiece(pos: Vec2d, piece: Piece)
 
-  case class Board(size: Vec2d, pieces: List[Model.PlacedPiece])
+  case class Board(size: Vec2d, pieces: Map[Vec2d, Piece])
   object Board {
-    def empty = Board(size = Vec2d(0, 0), pieces = List())
+    def empty = Board(size = Vec2d(0, 0), pieces = Map())
+  }
+
+  // FIXME
+  implicit val vec2dKeyEncoder = new KeyEncoder[Vec2d] {
+    override def apply(key: Vec2d): String = ???
+  }
+  implicit val vec2dKeyDecoder = new KeyDecoder[Vec2d] {
+    override def apply(key: String): Option[Vec2d] = ???
   }
 
   case class PlayerState(id: String, kind: PlayerState.Kind)
@@ -55,21 +63,19 @@ object Model {
     def empty = GameState(Board.empty, Map(), false, White, None)
   }
 
-  implicit val pieceColorKeyEncoder: KeyEncoder[PieceColor] =
-    new KeyEncoder[PieceColor] {
-      override def apply(pc: PieceColor): String = pc match {
-        case White => White.toString()
-        case Black => Black.toString()
-      }
+  implicit val pieceColorKeyEncoder = new KeyEncoder[PieceColor] {
+    override def apply(key: PieceColor): String = key match {
+      case White => White.toString()
+      case Black => Black.toString()
     }
-  implicit val pieceColorKeyDecoder: KeyDecoder[PieceColor] =
-    new KeyDecoder[PieceColor] {
-      override def apply(key: String): Option[PieceColor] = key match {
-        case v if v == White.toString() => Some(White)
-        case v if v == Black.toString() => Some(Black)
-        case _                          => None
-      }
+  }
+  implicit val pieceColorKeyDecoder = new KeyDecoder[PieceColor] {
+    override def apply(key: String): Option[PieceColor] = key match {
+      case v if v == White.toString() => Some(White)
+      case v if v == Black.toString() => Some(Black)
+      case _                          => None
     }
+  }
 
   // web socket
   // TODO: should go to httpModel

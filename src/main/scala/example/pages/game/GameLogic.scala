@@ -50,7 +50,11 @@ object GameLogic {
   }
 
   private def pieces(board: Board): Map[Vec2d, BoardComponent.PieceUiModel] =
-    board.pieces.map(p => (p.pos, createPieceModel(p.piece))).toMap
+    board
+      .pieces
+      .map { case (pos, piece) =>
+        (pos, createPieceModel(piece))
+      }
 
   private def createPieceModel(piece: Piece): BoardComponent.PieceUiModel =
     BoardComponent.PieceUiModel(piece, Var(true))

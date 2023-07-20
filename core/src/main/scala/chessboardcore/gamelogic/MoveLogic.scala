@@ -177,19 +177,18 @@ object MoveLogic {
       .flatten
   }
 
+  // FIXME
   private def simulateMove(board: Board, from: Vec2d, to: Vec2d): Board = {
     lazy val lens = board.focus(_.pieces)
 
-    board.pieces.find(p => p.pos == from) match {
-      case None => board
-      case Some(placedPiece) =>
-        val nextPlacedPiece = PlacedPiece(to, placedPiece.piece)
-        lens.modify(_.filter(p => p.pos != from).appended(nextPlacedPiece))
+    board.pieces.get(from) match {
+      case None        => board
+      case Some(piece) => lens.modify(_.removed(from).updated(to, piece))
     }
   }
 
   def possibleMoves(board: Board, from: Vec2d): List[Vec2d] = {
-    val pieces = board.pieces.map(p => (p.pos, p.piece)).toMap
+    val pieces = board.pieces
     val pieceOn = (v: Vec2d) => pieces.get(v)
     val tileExists = (v: Vec2d) =>
       (v.x >= 0 && v.y >= 0 && v.x < board.size.x && v.y < board.size.y)
@@ -209,13 +208,17 @@ object MoveLogic {
           case Pawn => pawnMoves(from, color, board.size.y, tileExists, pieceOn)
         }
 
-        val kingOpt = board.pieces.find(p => p.piece.color == color)
+        val kingOpt = board
+          .pieces
+          .find { case (_, piece) =>
+            piece.color == color
+          }
 
         kingOpt match {
           case None => moves
-          case Some(king) => moves.filter { toPos =>
+          case Some((pos, king)) => moves.filter { toPos =>
               val _board = simulateMove(board, from, toPos)
-              isKingChecked(_board, king)
+              isKingChecked(_board, pos, king.color)
             }
         }
     }
@@ -224,15 +227,23 @@ object MoveLogic {
   def canMove(board: Board, from: Vec2d, to: Vec2d): Boolean =
     possibleMoves(board, from).contains(to)
 
-  def isKingChecked(board: Board, king: PlacedPiece): Boolean =
-    allPossibleMoves(board, p => p.piece.color != king.piece.color)
-      .contains(king.pos)
+  def isKingChecked(
+      board: Board,
+      kingPos: Vec2d,
+      kingColor: PieceColor
+  ): Boolean = allPossibleMoves(board, col => col != kingColor)
+    .contains(kingPos)
 
   def allPossibleMoves(
       board: Board,
-      pieceFn: PlacedPiece => Boolean
+      colorFn: PieceColor => Boolean
   ): List[Vec2d] = board
     .pieces
-    .filter(pieceFn)
-    .flatMap(p => MoveLogic.possibleMoves(board, p.pos))
+    .toList
+    .filter { case (_, piece) =>
+      colorFn(piece.color)
+    }
+    .flatMap { case (pos, _) =>
+      MoveLogic.possibleMoves(board, pos)
+    }
 }

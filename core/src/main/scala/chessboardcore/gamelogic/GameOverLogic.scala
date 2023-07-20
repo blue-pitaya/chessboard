@@ -1,45 +1,59 @@
 package chessboardcore.gamelogic
 
 import chessboardcore.Model._
+import chessboardcore.Vec2d
 
 object GameOverLogic {
   import GameOverReasons._
   import GameOverState._
 
   def isGameOver(board: Board, turnFor: PieceColor): Option[GameOverState] = {
-    val whiteKingOpt = board.pieces.find(p => p.piece == Piece(White, King))
-    val blackKingOpt = board.pieces.find(p => p.piece == Piece(Black, King))
+    val whiteKingOpt = board
+      .pieces
+      .find { case (pos, piece) =>
+        piece == Piece(White, King)
+      }
+    val blackKingOpt = board
+      .pieces
+      .find { case (pos, piece) =>
+        piece == Piece(Black, King)
+      }
 
     (whiteKingOpt, blackKingOpt) match {
       case (None, None)    => Some(Draw(noKingsReason))
       case (Some(_), None) => Some(WinFor(White, noKingOf(Black)))
       case (None, Some(_)) => Some(WinFor(Black, noKingOf(White)))
-      case (Some(whiteKing), Some(blackKing)) => turnFor match {
-          case Black => checkStalemateOrMate(board, blackKing)
-          case White => checkStalemateOrMate(board, whiteKing)
+      case (
+            Some((whiteKingPos, whiteKingPiece)),
+            Some((blackKingPos, blackKingPiece))
+          ) => turnFor match {
+          case White =>
+            checkStalemateOrMate(board, whiteKingPos, whiteKingPiece.color)
+          case Black =>
+            checkStalemateOrMate(board, blackKingPos, blackKingPiece.color)
+          case _ => None
         }
     }
   }
 
   private def checkStalemateOrMate(
       board: Board,
-      king: PlacedPiece
+      kingPos: Vec2d,
+      kingColor: PieceColor
   ): Option[GameOverState] = {
-    val color = king.piece.color
-    val _canAnyPieceMove = canAnyPieceMove(board, color)
-    val _isKingChecked = MoveLogic.isKingChecked(board, king)
+    val _canAnyPieceMove = canAnyPieceMove(board, kingColor)
+    val _isKingChecked = MoveLogic.isKingChecked(board, kingPos, kingColor)
 
     (_canAnyPieceMove, _isKingChecked) match {
       case (false, false) => Some(Draw(staleMate))
-      case (false, true) => Some(WinFor(PieceColor.opposite(color), regularWin))
-      case _             => None
+      case (false, true) =>
+        Some(WinFor(PieceColor.opposite(kingColor), regularWin))
+      case _ => None
     }
   }
 
   private def canAnyPieceMove(board: Board, color: PieceColor): Boolean =
-    MoveLogic.allPossibleMoves(board, p => p.piece.color == color).isEmpty ==
-      false
-
+    MoveLogic.allPossibleMoves(board, col => col == color).isEmpty == false
 }
 
 object GameOverReasons {

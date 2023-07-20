@@ -21,7 +21,6 @@ object Main extends IOApp.Simple {
 
   private def debugRun(): IO[Unit] = for {
     globalState <- initState()
-    _ <- GameService.createExample(globalState.gameServiceStateRef)
     _ <- Server
       .create(globalState)
       .use { _ =>
