@@ -18,7 +18,9 @@ object GamePage {
   case class RequestGameState() extends Event
 
   case class State(
-      gameState: Var[GameState],
+      gameState: Var[TrueGameState],
+      players: Var[Map[PieceColor, PlayerState]],
+      gameStarted: Var[Boolean],
       playerId: String,
       draggingPieceState: Var[Option[DraggingPiece.DraggingPieceState]],
       boardComponentRef: Var[Option[dom.Element]],
@@ -28,7 +30,9 @@ object GamePage {
   )
 
   private def createState(playerId: String) = State(
-    Var(GameState.empty),
+    Var(TrueGameState.empty),
+    Var(Map()),
+    Var(false),
     playerId,
     Var(None),
     Var(None),
@@ -49,7 +53,7 @@ object GamePage {
       .build()
 
     div(
-      GameLogic
+      GameService
         .wire(bus.events, plSectionBus.events, boardBus.events, state, ws),
       cls("flex flex-row gap-4 m-4"),
       boardComponent(state, dm, boardBus.writer),
@@ -85,9 +89,9 @@ object GamePage {
   ): Element = {
     val data = PlayersSection.Data(
       state.playerId,
-      state.gameState.signal.map(_.players.get(White)),
-      state.gameState.signal.map(_.players.get(Black)),
-      state.gameState.signal.map(_.gameStarted),
+      state.players.signal.map(_.get(White)),
+      state.players.signal.map(_.get(Black)),
+      state.gameStarted.signal,
       state.gameState.signal.map(_.turn)
     )
 

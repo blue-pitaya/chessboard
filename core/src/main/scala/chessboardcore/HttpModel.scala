@@ -17,5 +17,5 @@ object HttpModel {
   case class Move(playerId: String, from: Vec2d, to: Vec2d) extends GameEvent_In
 
   sealed trait GameEvent_Out
-  case class Response(v: GameState, msg: String) extends GameEvent_Out
+  case class Response(v: TrueGameState, msg: String) extends GameEvent_Out
 }

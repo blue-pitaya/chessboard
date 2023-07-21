@@ -2,24 +2,47 @@ package chessboardapi
 
 import cats.effect.IO
 import cats.effect.kernel.Ref
-import chessboardcore.Model._
+import chessboardcore.HttpModel
+import chessboardcore.HttpModel._
 import chessboardcore.Model.PlayerState._
+import chessboardcore.Model._
+import chessboardcore.Vec2d
+import chessboardcore.gamelogic.MoveLogic
 import io.circe.generic.auto._
 import monocle.syntax.all._
 import org.http4s.Response
 import org.http4s.server.websocket.WebSocketBuilder2
-import chessboardcore.Vec2d
-import chessboardcore.gamelogic.MoveLogic
-import chessboardcore.HttpModel._
-import chessboardcore.HttpModel
+import chessboardcore.gamelogic.GameLogic
 
 object TrueGameService {
-  case class State(gameState: GameState, msg: String)
+  case class State(
+      gameState: TrueGameState,
+      msg: String,
+      players: Map[PieceColor, PlayerState],
+      gameStarted: Boolean
+  )
   // TODO: this in unnecessary
   case class Module(subsrice: WebSocketBuilder2[IO] => IO[Response[IO]])
 
-  private def createState(board: Board): IO[Ref[IO, State]] = Ref
-    .of[IO, State](State(GameState.empty.copy(board = board), ""))
+  def create(board: Board): IO[Module] = {
+    for {
+      stateRef <- createState(board)
+      _handle = (e: GameEvent_In) => handle(e, stateRef)
+      x <- WebSockerBroadcaster.create(_handle)
+      s = (ws: WebSocketBuilder2[IO]) => {
+        ws.build(x._1, x._2)
+      }
+    } yield (Module(s))
+  }
+
+  private def createState(board: Board): IO[Ref[IO, State]] = Ref.of[IO, State](
+    State(
+      gameState = GameLogic.createGame(board),
+      msg = "",
+      players = Map(),
+      gameStarted = false
+    )
+  )
 
   private def handle(
       e: GameEvent_In,
@@ -61,7 +84,7 @@ object TrueGameService {
   ): Either[String, State] = {
     val gameIsNotOver = state.gameState.gameOver.isEmpty
     val moveIsPossible = MoveLogic.canMove(state.gameState.board, from, to)
-    val itsPlayersTurn = playerIdOfCurrentTurn(state.gameState)
+    val itsPlayersTurn = playerIdOfCurrentTurn(state)
       .map(_ == playerId)
       .getOrElse(false)
 
@@ -72,9 +95,9 @@ object TrueGameService {
     } yield (makeMove(state, from, to))
   }
 
-  private def playerIdOfCurrentTurn(gs: GameState): Option[String] = gs
+  private def playerIdOfCurrentTurn(state: State): Option[String] = state
     .players
-    .get(gs.turn)
+    .get(state.gameState.turn)
     .map(_.id)
 
   private def trueOrErr(cond: Boolean, msg: String): Either[String, Unit] =
@@ -96,15 +119,15 @@ object TrueGameService {
       color: PieceColor
   ): State = {
     val nextState = readyPlayer(playerId, color, state)
-    if (areBothPlayersReady(nextState.gameState)) startGame(nextState)
+    if (areBothPlayersReady(state)) startGame(nextState)
     else nextState
   }
 
   private def startGame(state: State): State = state
-    .focus(_.gameState.gameStarted)
+    .focus(_.gameStarted)
     .replace(true)
 
-  private def areBothPlayersReady(gs: GameState): Boolean = gs
+  private def areBothPlayersReady(state: State): Boolean = state
     .players
     .filter(_._2.kind != Ready)
     .isEmpty
@@ -121,7 +144,7 @@ object TrueGameService {
       playerId: String,
       state: State
   ): State = state
-    .focus(_.gameState.players)
+    .focus(_.players)
     .modify(pls =>
       pls.get(color) match {
         case None => pls.updated(color, PlayerState(playerId, Sitting))
@@ -134,7 +157,7 @@ object TrueGameService {
       color: PieceColor,
       state: State
   ): State = state
-    .focus(_.gameState.players)
+    .focus(_.players)
     .modify(pls =>
       pls.get(color) match {
         case Some(PlayerState(id, Sitting)) if id == playerId =>
@@ -143,14 +166,4 @@ object TrueGameService {
       }
     )
 
-  def create(board: Board): IO[Module] = {
-    for {
-      stateRef <- createState(board)
-      _handle = (e: GameEvent_In) => handle(e, stateRef)
-      x <- WebSockerBroadcaster.create(_handle)
-      s = (ws: WebSocketBuilder2[IO]) => {
-        ws.build(x._1, x._2)
-      }
-    } yield (Module(s))
-  }
 }

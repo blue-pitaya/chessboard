@@ -16,7 +16,7 @@ import example.components.DraggingPiece
 import example.pages.creator.EvHandler
 import io.laminext.websocket.WebSocket
 
-object GameLogic {
+object GameService {
   case class Module(sendWsEventObserver: Observer[GameEvent_In])
 
   def wire(
@@ -88,7 +88,7 @@ object GameLogic {
       case ElementRefChanged(v) => state.boardComponentRef.set(Some(v))
       case PieceDragging(e, fromPos) =>
         val pieceOpt = state.pieces.now().get(fromPos)
-        val gameStarted = state.gameState.now().gameStarted
+        val gameStarted = state.gameStarted.now()
         val myPlayerId = state.playerId
         val currentTurn = state.gameState.now().turn
         val isMyPiece = (col: PieceColor) =>
@@ -118,7 +118,7 @@ object GameLogic {
   private def playerId(
       state: GamePage.State,
       color: PieceColor
-  ): Option[String] = state.gameState.now().players.get(color).map(_.id)
+  ): Option[String] = state.players.now().get(color).map(_.id)
 
   private def handlePieceDragging(
       e: Dragging.Event,

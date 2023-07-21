@@ -58,15 +58,14 @@ object Model {
     case class Draw(reason: String) extends GameOverState
   }
 
-  case class GameState(
+  case class TrueGameState(
       board: Board,
-      players: Map[PieceColor, PlayerState],
-      gameStarted: Boolean,
       turn: PieceColor,
       gameOver: Option[GameOverState]
   )
-  object GameState {
-    def empty = GameState(Board.empty, Map(), false, White, None)
+  object TrueGameState {
+    def empty =
+      TrueGameState(board = Board.empty, turn = White, gameOver = None)
   }
 
   implicit val pieceColorKeyEncoder = new KeyEncoder[PieceColor] {
