@@ -11,6 +11,7 @@ import io.circe.generic.auto._
 import io.laminext.websocket.WebSocket
 import io.laminext.websocket.circe._
 import org.scalajs.dom
+import chessboardcore.HttpModel._
 
 object GamePage {
   sealed trait Event
@@ -40,9 +41,9 @@ object GamePage {
     val bus = new EventBus[Event]
     val plSectionBus = new EventBus[PlayersSection.Event]
     val boardBus = new EventBus[BoardComponent.Event]
-    val ws: WebSocket[WsEv, WsEv] = WebSocket
+    val ws: WebSocket[GameEvent_Out, GameEvent_In] = WebSocket
       .url(HttpClient.gameWebSockerUrl(gameId))
-      .json[WsEv, WsEv]
+      .json[GameEvent_Out, GameEvent_In]
       .build()
 
     div(

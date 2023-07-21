@@ -10,6 +10,7 @@ import org.http4s.Response
 import org.http4s.server.websocket.WebSocketBuilder2
 import chessboardcore.Vec2d
 import chessboardcore.gamelogic.MoveLogic
+import chessboardcore.HttpModel._
 
 object TrueGameService {
   case class State(gameState: GameState, msg: String)
@@ -19,14 +20,17 @@ object TrueGameService {
   private def createState(board: Board): IO[Ref[IO, State]] = Ref
     .of[IO, State](State(GameState.empty.copy(board = board), ""))
 
-  private def handle(e: WsEv, stateRef: Ref[IO, State]): IO[WsEv] = {
+  private def handle(
+      e: GameEvent_In,
+      stateRef: Ref[IO, State]
+  ): IO[GameEvent_Out] = {
     val _updateGameState = (f: State => State) => updateGameState(stateRef, f)
     val _updateGameStateOrMsg = _updateGameState compose flattenMsg
 
-    e.e match {
+    e match {
       case GetGameState() => for {
           state <- stateRef.get
-        } yield (WsEv(GameStateData(state.gameState)))
+        } yield (GameStateData(state.gameState))
 
       case PlayerSit(playerId, color) =>
         _updateGameState(s => sitPlayer(color, playerId, s))
@@ -36,8 +40,6 @@ object TrueGameService {
 
       case Move(playerId, from, to) =>
         _updateGameStateOrMsg(s => tryMakeMove(s, playerId, from, to))
-
-      case _ => IO.pure(WsEv(Ok()))
     }
   }
 
@@ -107,9 +109,9 @@ object TrueGameService {
   private def updateGameState(
       stateRef: Ref[IO, State],
       f: State => State
-  ): IO[WsEv] = for {
+  ): IO[GameEvent_Out] = for {
     nextState <- stateRef.updateAndGet(f)
-  } yield (WsEv(GameStateData(nextState.gameState)))
+  } yield (GameStateData(nextState.gameState))
 
   private def sitPlayer(
       color: PieceColor,
@@ -141,7 +143,7 @@ object TrueGameService {
   def create(board: Board): IO[Module] = {
     for {
       stateRef <- createState(board)
-      _handle = (e: WsEv) => handle(e, stateRef)
+      _handle = (e: GameEvent_In) => handle(e, stateRef)
       x <- WebSockerBroadcaster.create(_handle)
       s = (ws: WebSocketBuilder2[IO]) => {
         ws.build(x._1, x._2)

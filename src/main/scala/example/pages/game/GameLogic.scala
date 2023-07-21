@@ -1,33 +1,32 @@
 package example.pages.game
 
-import chessboardcore.Model
+import chessboardcore.HttpModel._
 import chessboardcore.Model._
 import chessboardcore.Vec2d
+import chessboardcore.gamelogic.MoveLogic
 import com.raquo.laminar.api.L._
 import dev.bluepitaya.laminardragging.DragEventKind
 import dev.bluepitaya.laminardragging.Dragging
+import example.AppModel
+import example.Misc
 import example.components.BoardComponent
 import example.components.BoardComponent.ElementRefChanged
 import example.components.BoardComponent.PieceDragging
-import example.pages.game.PlayersSection.PlayerReady
-import io.laminext.websocket.WebSocket
 import example.components.DraggingPiece
-import example.Misc
 import example.pages.creator.EvHandler
-import example.AppModel
-import chessboardcore.gamelogic.MoveLogic
+import io.laminext.websocket.WebSocket
 
 object GameLogic {
-  case class Module(sendWsEventObserver: Observer[Model.WsEv])
+  case class Module(sendWsEventObserver: Observer[GameEvent_In])
 
   def wire(
       events: EventStream[GamePage.Event],
       plSectionEvents: EventStream[PlayersSection.Event],
       boardCompEvents: EventStream[BoardComponent.Event],
       state: GamePage.State,
-      ws: WebSocket[WsEv, WsEv]
+      ws: WebSocket[GameEvent_Out, GameEvent_In]
   ): Seq[Binder.Base] = Seq(
-    ws.received.-->(Observer[Model.WsEv](e => handleWsEvent(e, state))),
+    ws.received.-->(Observer[GameEvent_Out](e => handleWsEvent(e, state))),
     events
       .-->(Observer[GamePage.Event](e => handleEvent(e, state, ws.sendOne))),
     plSectionEvents.-->(
@@ -42,12 +41,13 @@ object GameLogic {
     )
   )
 
-  private def handleWsEvent(e: WsEv, state: GamePage.State): Unit = e match {
-    case WsEv(GameStateData(v)) =>
-      state.gameState.set(v)
-      state.pieces.set(pieces(v.board))
-    case _ => ()
-  }
+  private def handleWsEvent(e: GameEvent_Out, state: GamePage.State): Unit =
+    e match {
+      case GameStateData(v) =>
+        state.gameState.set(v)
+        state.pieces.set(pieces(v.board))
+      case _ => ()
+    }
 
   private def pieces(board: Board): Map[Vec2d, BoardComponent.PieceUiModel] =
     board
@@ -62,26 +62,26 @@ object GameLogic {
   private def handleEvent(
       e: GamePage.Event,
       state: GamePage.State,
-      sendWsEvent: WsEv => Unit
+      sendWsEvent: GameEvent_In => Unit
   ): Unit = e match {
-    case GamePage.RequestGameState() => sendWsEvent(WsEv(GetGameState()))
+    case GamePage.RequestGameState() => sendWsEvent(GetGameState())
   }
 
   private def handlePlSectionEvent(
       e: PlayersSection.Event,
       state: GamePage.State,
-      sendWsEvent: WsEv => Unit
+      sendWsEvent: GameEvent_In => Unit
   ): Unit = e match {
     case PlayersSection.PlayerSit(color) =>
-      sendWsEvent(WsEv(PlayerSit(state.playerId, color)))
-    case PlayerReady(color) =>
-      sendWsEvent(WsEv(Model.PlayerReady(state.playerId, color)))
+      sendWsEvent(PlayerSit(state.playerId, color))
+    case PlayersSection.PlayerReady(color) =>
+      sendWsEvent(PlayerReady(state.playerId, color))
   }
 
   private def handleBoardComponentEvent(
       e: BoardComponent.Event,
       state: GamePage.State,
-      sendWsEvent: WsEv => Unit
+      sendWsEvent: GameEvent_In => Unit
   ): Unit = {
     e match {
       case ElementRefChanged(v) => state.boardComponentRef.set(Some(v))
@@ -93,7 +93,7 @@ object GameLogic {
         val isMyPiece = (col: PieceColor) =>
           playerId(state, col).map(_ == myPlayerId).getOrElse(false)
         val sendMoveEvent =
-          (toPos: Vec2d) => sendWsEvent(WsEv(Move(myPlayerId, fromPos, toPos)))
+          (toPos: Vec2d) => sendWsEvent(Move(myPlayerId, fromPos, toPos))
 
         (pieceOpt, gameStarted) match {
           case (Some(piece), true) => if (isMyPiece(piece.piece.color)) {

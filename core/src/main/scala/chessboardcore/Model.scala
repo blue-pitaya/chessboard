@@ -82,18 +82,4 @@ object Model {
       case _                          => None
     }
   }
-
-  // web socket
-  // TODO: should go to httpModel
-  sealed trait WsEvent
-  case class GetGameState() extends WsEvent
-  case class GameStateData(v: GameState) extends WsEvent
-  case class PlayerSit(playerId: String, color: PieceColor) extends WsEvent
-  // FIXME: add color!
-  case class PlayerReady(playerId: String, color: PieceColor) extends WsEvent
-  case class Move(playerId: String, from: Vec2d, to: Vec2d) extends WsEvent
-  case class Ok() extends WsEvent
-
-  // TODO: can be lifted kurwa
-  case class WsEv(e: WsEvent)
 }
