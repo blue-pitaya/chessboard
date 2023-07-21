@@ -11,6 +11,7 @@ import org.http4s.server.websocket.WebSocketBuilder2
 import chessboardcore.Vec2d
 import chessboardcore.gamelogic.MoveLogic
 import chessboardcore.HttpModel._
+import chessboardcore.HttpModel
 
 object TrueGameService {
   case class State(gameState: GameState, msg: String)
@@ -30,7 +31,7 @@ object TrueGameService {
     e match {
       case GetGameState() => for {
           state <- stateRef.get
-        } yield (GameStateData(state.gameState))
+        } yield (HttpModel.Response(state.gameState, state.msg))
 
       case PlayerSit(playerId, color) =>
         _updateGameState(s => sitPlayer(color, playerId, s))
@@ -38,8 +39,10 @@ object TrueGameService {
       case PlayerReady(playerId, color) =>
         _updateGameState(s => handlePlayerReady(s, playerId, color))
 
-      case Move(playerId, from, to) =>
-        _updateGameStateOrMsg(s => tryMakeMove(s, playerId, from, to))
+      case Move(playerId, from, to) => for {
+          _ <- IO.println(s"Move requested: $from -> $to by $playerId")
+          resp <- _updateGameStateOrMsg(s => tryMakeMove(s, playerId, from, to))
+        } yield (resp)
     }
   }
 
@@ -111,7 +114,7 @@ object TrueGameService {
       f: State => State
   ): IO[GameEvent_Out] = for {
     nextState <- stateRef.updateAndGet(f)
-  } yield (GameStateData(nextState.gameState))
+  } yield (HttpModel.Response(nextState.gameState, nextState.msg))
 
   private def sitPlayer(
       color: PieceColor,

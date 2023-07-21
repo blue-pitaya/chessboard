@@ -29,7 +29,8 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies ++=
       Seq(
         "dev.optics" %%% "monocle-core" % MonocleVersion,
-        "dev.optics" %%% "monocle-macro" % MonocleVersion
+        "dev.optics" %%% "monocle-macro" % MonocleVersion,
+        "org.scalameta" %% "munit" % MunitVersion % Test
       )
   )
   .jsSettings(

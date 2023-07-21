@@ -43,9 +43,10 @@ object GameLogic {
 
   private def handleWsEvent(e: GameEvent_Out, state: GamePage.State): Unit =
     e match {
-      case GameStateData(v) =>
-        state.gameState.set(v)
-        state.pieces.set(pieces(v.board))
+      case Response(gameState, msg) =>
+        state.gameState.set(gameState)
+        state.pieces.set(pieces(gameState.board))
+        state.msgFromApi.set(msg)
       case _ => ()
     }
 

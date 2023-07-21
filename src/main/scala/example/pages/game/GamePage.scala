@@ -23,7 +23,8 @@ object GamePage {
       draggingPieceState: Var[Option[DraggingPiece.DraggingPieceState]],
       boardComponentRef: Var[Option[dom.Element]],
       pieces: Var[Map[Vec2d, BoardComponent.PieceUiModel]],
-      highlightedTiles: Var[Set[Vec2d]]
+      highlightedTiles: Var[Set[Vec2d]],
+      msgFromApi: Var[String]
   )
 
   private def createState(playerId: String) = State(
@@ -32,7 +33,8 @@ object GamePage {
     Var(None),
     Var(None),
     Var(Map()),
-    Var(Set())
+    Var(Set()),
+    Var("")
   )
 
   def component(gameId: String, dm: AppModel.DM): Element = {
@@ -52,6 +54,7 @@ object GamePage {
       cls("flex flex-row gap-4 m-4"),
       boardComponent(state, dm, boardBus.writer),
       playersSectionComponent(state, plSectionBus.writer),
+      div(child.text <-- state.msgFromApi.signal),
       ws.connect,
       child <-- draggingPieceComponentSignal(state),
       onMountCallback { ctx =>

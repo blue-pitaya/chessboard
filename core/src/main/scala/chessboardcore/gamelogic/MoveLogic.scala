@@ -187,7 +187,10 @@ object MoveLogic {
     }
   }
 
-  def possibleMoves(board: Board, from: Vec2d): List[Vec2d] = {
+  def possibleMovesIgnoringPossibleCheck(
+      board: Board,
+      from: Vec2d
+  ): List[Vec2d] = {
     val pieces = board.pieces
     val pieceOn = (v: Vec2d) => pieces.get(v)
     val tileExists = (v: Vec2d) =>
@@ -199,7 +202,7 @@ object MoveLogic {
       case Some(Piece(color, kind)) =>
         lazy val _bishopMoves = bishopMoves(from, color, tileExists, pieceOn)
         lazy val _rookMoves = rookMoves(from, color, tileExists, pieceOn)
-        val moves = kind match {
+        kind match {
           case King   => kingMoves(from, color, tileExists, pieceOn)
           case Rook   => _rookMoves
           case Knight => knightMoves(from, color, tileExists, pieceOn)
@@ -207,43 +210,45 @@ object MoveLogic {
           case Queen  => queenMoves(_bishopMoves, _rookMoves)
           case Pawn => pawnMoves(from, color, board.size.y, tileExists, pieceOn)
         }
-
-        val kingOpt = board
-          .pieces
-          .find { case (_, piece) =>
-            piece.color == color
-          }
-
-        kingOpt match {
-          case None => moves
-          case Some((pos, king)) => moves.filter { toPos =>
-              val _board = simulateMove(board, from, toPos)
-              isKingChecked(_board, pos, king.color)
-            }
-        }
     }
   }
+
+  def possibleMoves(board: Board, from: Vec2d): List[Vec2d] = board
+    .pieces
+    .get(from)
+    .map { piece =>
+      possibleMovesIgnoringPossibleCheck(board, from).filter { to =>
+        val simulatedMoveBoard = simulateMove(board, from, to)
+        !isKingChecked(simulatedMoveBoard, piece.color)
+      }
+    }
+    .getOrElse(List())
 
   def canMove(board: Board, from: Vec2d, to: Vec2d): Boolean =
     possibleMoves(board, from).contains(to)
 
-  def isKingChecked(
-      board: Board,
-      kingPos: Vec2d,
-      kingColor: PieceColor
-  ): Boolean = allPossibleMoves(board, col => col != kingColor)
-    .contains(kingPos)
+  def isKingChecked(board: Board, color: PieceColor): Boolean =
+    kingPos(board, color) match {
+      case None => false
+      case Some(pos) => allPiecesOfColor(board, PieceColor.opposite(color))
+          .flatMap { case (pos, _) =>
+            possibleMovesIgnoringPossibleCheck(board, pos)
+          }
+          .contains(pos)
+    }
 
-  def allPossibleMoves(
-      board: Board,
-      colorFn: PieceColor => Boolean
-  ): List[Vec2d] = board
+  def kingPos(board: Board, color: PieceColor): Option[Vec2d] = board
     .pieces
-    .toList
-    .filter { case (_, piece) =>
-      colorFn(piece.color)
+    .find { case (pos, piece) =>
+      piece == Piece(color, King)
     }
-    .flatMap { case (pos, _) =>
-      MoveLogic.possibleMoves(board, pos)
-    }
+    .map(_._1)
+
+  def allPiecesOfColor(board: Board, color: PieceColor): List[(Vec2d, Piece)] =
+    board
+      .pieces
+      .toList
+      .filter { case (_, piece) =>
+        piece.color == color
+      }
 }
