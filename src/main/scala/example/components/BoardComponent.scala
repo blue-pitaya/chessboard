@@ -58,6 +58,7 @@ object BoardComponent {
         placedPiecesOnBoard(placedPieces, boardSize).map {
           case (pos, pieceUiModel) =>
             val imgPath = Misc.pieceImgPath(pieceUiModel.piece)
+
             placedPieceComponent(
               Logic.tileCanvasPos(data.canvasSize, boardSize, pos, isFlipped),
               Logic.tileSize(boardSize, data.canvasSize),
@@ -111,19 +112,19 @@ object BoardComponent {
       pieceImgPath: String,
       isVisibleSignal: Signal[Boolean],
       draggingBindings: Seq[Binder.Base]
-  ): Element = {
-    svg.image(
-      svg.x(pos.x.toString()),
-      svg.y(pos.y.toString()),
-      svg.width(tileSize.toString()),
-      svg.height(tileSize.toString()),
-      svg.href <--
-        isVisibleSignal.map {
-          case true => pieceImgPath
-          // TODO: quick hack
-          case false => ""
-        },
-      draggingBindings
-    )
-  }
+  ): Element = svg.g(
+    child <--
+      isVisibleSignal.map {
+        case true => svg.image(
+            svg.x(pos.x.toString()),
+            svg.y(pos.y.toString()),
+            svg.width(tileSize.toString()),
+            svg.height(tileSize.toString()),
+            svg.href(pieceImgPath)
+          )
+        case false => emptyNode
+      },
+    draggingBindings
+  )
+
 }
