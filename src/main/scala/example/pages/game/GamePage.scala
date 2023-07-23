@@ -21,7 +21,7 @@ object GamePage {
       boardComponentRef: Var[Option[dom.Element]],
       pieces: Var[Map[Vec2d, BoardComponent.PieceUiModel]],
       highlightedTiles: Var[Set[Vec2d]],
-      msgFromApi: Var[String]
+      msgFromApi: Var[Option[String]]
   )
 
   def component(gameId: String, dm: AppModel.DM): Element = {
@@ -35,10 +35,13 @@ object GamePage {
 
     div(
       gameServiceModule.bindings,
-      cls("flex flex-row gap-4 m-4"),
-      boardComponent(state, dm, boardBus.writer),
-      playersSectionComponent(state, plSectionBus.writer),
-      div(child.text <-- state.msgFromApi.signal),
+      cls("flex flex-col gap-4 m-4"),
+      div(
+        cls("flex flex-row gap-4"),
+        boardComponent(state, dm, boardBus.writer),
+        playersSectionComponent(state, plSectionBus.writer)
+      ),
+      div(child.text <-- state.msgFromApi.signal.map(_.getOrElse(""))),
       child <-- draggingPieceComponentSignal(state),
       onMountCallback { ctx =>
         bus.emit(RequestGameState())

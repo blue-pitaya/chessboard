@@ -49,10 +49,14 @@ object GameService {
       events
         .-->(Observer[GamePage.Event](e => handleEvent(e, state, ws.sendOne))),
       plSectionEvents.-->(
-        Observer[PlayersSectionComponent.Event](e => handlePlSectionEvent(e, state, ws.sendOne))
+        Observer[PlayersSectionComponent.Event](e =>
+          handlePlSectionEvent(e, state, ws.sendOne)
+        )
       ),
       boardCompEvents.-->(
-        Observer[BoardComponent.Event](e => handleBoardComponentEvent(e, state, ws.sendOne))
+        Observer[BoardComponent.Event](e =>
+          handleBoardComponentEvent(e, state, ws.sendOne)
+        )
       ),
       ws.connect
     )
@@ -69,24 +73,21 @@ object GameService {
     Var(None),
     Var(Map()),
     Var(Set()),
-    Var("")
+    Var(None)
   )
 
   private def handleWsEvent(e: GameEvent_Out, state: GamePage.State): Unit = {
     println(e)
-
-    e match {
-      case GameStateChanged(v) =>
-        state.gameState.set(v)
-        state.pieces.set(pieces(v.board))
-      case GameStarted()     => state.gameStarted.set(true)
-      case PlayersChanged(v) => state.players.set(v)
-      case StatusMessage(v)  => state.msgFromApi.set(v)
-    }
+    state.gameState.set(e.gameState)
+    state.pieces.set(pieces(e.gameState.board))
+    state.gameStarted.set(e.gameStarted)
+    state.players.set(e.players)
+    state.msgFromApi.set(e.msg)
   }
 
   private def pieces(board: Board): Map[Vec2d, BoardComponent.PieceUiModel] =
-    board.pieces
+    board
+      .pieces
       .map { case (pos, piece) =>
         (pos, createPieceModel(piece))
       }
@@ -126,15 +127,15 @@ object GameService {
         val myPlayerId = state.playerId
         val currentTurn = state.gameState.now().turn
 
-        val isMyPiece = (col: PieceColor) => playerId(state, col).map(_ == myPlayerId).getOrElse(false)
+        val isMyPiece = (col: PieceColor) =>
+          playerId(state, col).map(_ == myPlayerId).getOrElse(false)
 
         (pieceOpt, gameStarted) match {
-          case (Some(piece), true) =>
-            if (isMyPiece(piece.piece.color)) {
+          case (Some(piece), true) => if (isMyPiece(piece.piece.color)) {
               val _movePiece =
                 (to: Vec2d) => movePiece(state, fromPos, to, piece)
-              val sendMoveEvent =
-                (toPos: Vec2d) => sendWsEvent(Move(myPlayerId, fromPos, toPos, piece.piece.color))
+              val sendMoveEvent = (toPos: Vec2d) =>
+                sendWsEvent(Move(myPlayerId, fromPos, toPos, piece.piece.color))
 
               handlePieceDragging(
                 e,
@@ -165,7 +166,8 @@ object GameService {
       movePiece: Vec2d => Unit
   ): Unit = {
     lazy val board = state.gameState.now().board
-    val _updatePieceDraggingState = () => updatePieceDraggingState(state, e, Misc.pieceImgPath(pieceModel.piece))
+    val _updatePieceDraggingState = () =>
+      updatePieceDraggingState(state, e, Misc.pieceImgPath(pieceModel.piece))
 
     e.kind match {
       case DragEventKind.Start =>

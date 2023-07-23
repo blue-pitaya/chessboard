@@ -15,7 +15,6 @@ import org.http4s.server.websocket.WebSocketBuilder2
 object TrueGameService {
   case class State(
       gameState: TrueGameState,
-      msg: String,
       players: Map[PieceColor, PlayerState],
       gameStarted: Boolean
   )
@@ -36,11 +35,20 @@ object TrueGameService {
   private def createState(board: Board): IO[Ref[IO, State]] = Ref.of[IO, State](
     State(
       gameState = GameLogic.createGame(board),
-      msg = "",
       players = Map(),
       gameStarted = false
     )
   )
+
+  private def toResponse(s: State): GameEvent_Out = GameEvent_Out(
+    gameState = s.gameState,
+    msg = None,
+    gameStarted = s.gameStarted,
+    players = s.players
+  )
+
+  private def toRespons(s: State, msg: String): GameEvent_Out = toResponse(s)
+    .copy(msg = Some(msg))
 
   private def handle(
       e: GameEvent_In,
@@ -48,22 +56,21 @@ object TrueGameService {
   ): fs2.Stream[IO, GameEvent_Out] = e match {
     case GetGameState() => for {
         state <- Stream.eval(stateRef.get)
-      } yield (GameStateChanged(state.gameState))
+        resp = toResponse(state)
+      } yield (resp)
 
     case PlayerSit(playerId, color) => for {
         nextState <- Stream
           .eval(stateRef.updateAndGet(s => handleSitPlayer(color, playerId, s)))
-      } yield (PlayersChanged(nextState.players))
+        resp = toResponse(nextState)
+      } yield (resp)
 
     case PlayerReady(playerId, color) => for {
         nextState <- Stream.eval(
           stateRef.updateAndGet(s => handlePlayerReady(s, playerId, color))
         )
-        plChangedEvent = PlayersChanged(nextState.players)
-        events <-
-          if (nextState.gameStarted) Stream(plChangedEvent, GameStarted())
-          else Stream(plChangedEvent)
-      } yield (events)
+        resp = toResponse(nextState)
+      } yield (resp)
 
     case Move(playerId, from, to, color) =>
       val verifyPlayerColor = (s: State) => {
@@ -87,12 +94,16 @@ object TrueGameService {
           }
         nextState <-
           stateRef.updateAndGet(_.focus(_.gameState).replace(nextGameState))
-      } yield (GameStateChanged(nextState.gameState))
+      } yield (toResponse(nextState))
 
       Stream
         .eval(makeMove)
         .handleErrorWith { case GameServiceModel.MakeMoveFail(msg) =>
-          Stream.eval(IO.pure(StatusMessage(msg)))
+          val resp = for {
+            state <- stateRef.get
+            resp = toRespons(state, msg)
+          } yield (resp)
+          Stream.eval(resp)
         }
   }
 
