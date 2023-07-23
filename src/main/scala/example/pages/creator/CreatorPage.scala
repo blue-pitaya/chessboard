@@ -33,7 +33,8 @@ object CreatorPage {
       boardSize = state.boardSize.signal,
       placedPieces = state.placedPieces.signal,
       dm = dm,
-      highlightedTiles = Val(Set())
+      highlightedTiles = Val(Set()),
+      isFlipped = Val(false)
     )
     val piecePickerData = PiecePickerModel.Data(dm)
 

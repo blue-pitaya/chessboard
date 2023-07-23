@@ -34,12 +34,12 @@ object ExBoardForm {
             PiecePicker.catsRunObserver(handler)
         )
       ),
-      button(
-        Styles.btnCls,
-        "Save board",
-        onClick.mapToUnit -->
-          commitEvObserver[Unit](handler, _ => SaveBoardRequested())
-      ),
+      // button(
+      //  Styles.btnCls,
+      //  "Save board",
+      //  onClick.mapToUnit -->
+      //    commitEvObserver[Unit](handler, _ => SaveBoardRequested())
+      // ),
       button(
         Styles.btnCls,
         "Create game",

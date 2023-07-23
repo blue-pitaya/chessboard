@@ -10,12 +10,13 @@ import dev.bluepitaya.laminardragging.DragEventKind.End
 import dev.bluepitaya.laminardragging.DragEventKind.Move
 import dev.bluepitaya.laminardragging.DragEventKind.Start
 import dev.bluepitaya.laminardragging.Dragging
-import dev.bluepitaya.laminardragging.Vec2f
 import example.AppModel
 import example.AppRouter
 import example.Main
 import example.Misc
 import example.PageKey
+import example.components.DraggingPiece.DraggingPieceState
+import example.components.Logic
 import io.circe.generic.auto._
 import io.circe.syntax._
 import org.http4s._
@@ -23,9 +24,6 @@ import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.circe._
 import org.http4s.client.Client
 import org.scalajs.dom
-import example.components.Logic
-import example.components.DraggingPiece.DraggingPieceState
-import example.components.BoardComponent
 
 object EvHandler {
   import ExAppModel._
@@ -76,8 +74,7 @@ object EvHandler {
       .placedPieces
       .now()
       .collect {
-        case (pos, pieceUiModel)
-            if BoardComponent.isPosOnBoard(pos, boardSize) =>
+        case (pos, pieceUiModel) if Logic.isPosOnBoard(pos, boardSize) =>
           (pos, pieceUiModel.piece)
       }
 
@@ -187,8 +184,9 @@ object EvHandler {
     containerRef <- OptionT(IO(state.boardContainerRef.now()))
     canvasPos = getRelativePosition(e.e, containerRef)
     canvasSize = AppModel.DefaultBoardCanvasSize
-    tilePos <- OptionT
-      .fromOption[IO](tileLogicPos(boardSize, canvasSize, canvasPos))
+    tilePos <- OptionT.fromOption[IO](
+      Logic.tileLogicPos(boardSize, canvasSize, canvasPos, false)
+    )
   } yield (tilePos)
 
   def onEnd(state: State, e: PickerPieceDragging): IO[Unit] = {
@@ -206,32 +204,6 @@ object EvHandler {
       .placedPieces
       .update(v => v.updated(pos, PieceUiModel(piece, Var(true))))
   }
-
-  def tileLogicPos(
-      boardSize: Vec2d,
-      canvasSize: Vec2d,
-      canvasPos: Vec2d
-  ): Option[Vec2d] = {
-    val tileSize = Logic.tileSize(boardSize, canvasSize)
-    val boardOffset = Logic.boardOffset(tileSize, boardSize, canvasSize)
-    val onBoardPos = (canvasPos - boardOffset)
-    val pos =
-      Vec2f(onBoardPos.x.toDouble / tileSize, onBoardPos.y.toDouble / tileSize)
-
-    Option.when(isBetween(pos, Vec2f.zero, toVec2f(boardSize)))(
-      invertYAxis(toVec2dRoundedDown(pos), boardSize.y)
-    )
-  }
-
-  def toVec2f(v: Vec2d): Vec2f = Vec2f(v.x, v.y)
-
-  // TODO: dups in 2 places
-  def isBetween(v: Vec2f, b1: Vec2f, b2: Vec2f): Boolean = v.x >= b1.x &&
-    v.y >= b1.y && v.x < b2.x && v.y < b2.y
-
-  def invertYAxis(v: Vec2d, h: Int): Vec2d = Vec2d(v.x, h - v.y - 1)
-
-  def toVec2dRoundedDown(v: Vec2f): Vec2d = Vec2d(v.x.toInt, v.y.toInt)
 
   /** Get dragging position relative to other element. */
   def getRelativePosition(

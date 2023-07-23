@@ -15,7 +15,7 @@ object Main extends App {
   val appState = AppModel.AppState.init
   val httpClient = new HttpClient(client)
 
-  // TODO:
+  // FIXME:
   private def createApp() = {
     ???
   }

@@ -9,12 +9,12 @@ object TileComponent {
       pos: Vec2d,
       boardSize: Vec2d,
       canvasSize: Vec2d,
-      isHighlighted: Signal[Boolean]
+      isHighlighted: Signal[Boolean],
+      canvasPos: Vec2d
   )
 
   def create(data: Data): Element = {
-    val canvasPos = Logic
-      .tileCanvasPos(data.canvasSize, data.boardSize, data.pos)
+    val canvasPos = data.canvasPos
     val tileSize = Logic.tileSize(data.boardSize, data.canvasSize)
     val bgColor = tileColor(data.pos)
 

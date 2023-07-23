@@ -12,6 +12,7 @@ import org.scalajs.dom
 object BoardComponent {
   type BoardSize = Vec2d
   type BoardPos = Vec2d
+  type IsFlipped = Boolean
 
   case class PieceUiModel(piece: Model.Piece, isVisible: Var[Boolean])
 
@@ -24,54 +25,62 @@ object BoardComponent {
       boardSize: Signal[Vec2d],
       placedPieces: Signal[Map[Vec2d, PieceUiModel]],
       dm: DM,
-      highlightedTiles: Signal[Set[Vec2d]]
+      highlightedTiles: Signal[Set[Vec2d]],
+      isFlipped: Signal[Boolean]
   )
 
   def create(data: Data, handler: Observer[Event]): Element = {
-    val canvasSize = data.canvasSize
-
-    val _tileSize = (bs: BoardSize) => Logic.tileSize(bs, canvasSize)
-    val _tileCanvasPos =
-      (bs: BoardSize, pos: BoardPos) => Logic.tileCanvasPos(canvasSize, bs, pos)
-
-    val tileComponent = (boardSize: BoardSize, pos: BoardPos) => {
+    val tileComponent = (boardSize: BoardSize, pos: BoardPos, f: IsFlipped) => {
       TileComponent.create(
         TileComponent.Data(
           pos = pos,
           boardSize = boardSize,
           canvasSize = data.canvasSize,
-          isHighlighted = data.highlightedTiles.map(_.contains(pos))
+          isHighlighted = data.highlightedTiles.map(_.contains(pos)),
+          canvasPos = Logic.tileCanvasPos(data.canvasSize, boardSize, pos, f)
         )
       )
     }
-    val tilesSignal = data
+    val tileComponentsSignal = data
       .boardSize
-      .map(bs => tileComponents((pos: Vec2d) => tileComponent(bs, pos), bs))
+      .combineWith(data.isFlipped)
+      .map { case (boardSize, isFlipped) =>
+        val tileLogicPositions = Vec2d.matrix(boardSize)
+        tileLogicPositions.map(pos => tileComponent(boardSize, pos, isFlipped))
+      }
 
-    val _placedPieceDraggingBindings =
-      (pos: BoardPos) => placedPieceDraggingBindings(pos, data.dm, handler)
-
-    val _placedPiecesSignal = placedPiecesSignal(
-      data.boardSize,
-      data.placedPieces,
-      _tileSize,
-      _tileCanvasPos,
-      _placedPieceDraggingBindings
-    )
+    val placedPiecesSignal = data
+      .placedPieces
+      .signal
+      .combineWith(data.boardSize)
+      .combineWith(data.isFlipped)
+      .map { case (placedPieces, boardSize, isFlipped) =>
+        placedPiecesOnBoard(placedPieces, boardSize).map {
+          case (pos, pieceUiModel) =>
+            val imgPath = Misc.pieceImgPath(pieceUiModel.piece)
+            placedPieceComponent(
+              Logic.tileCanvasPos(data.canvasSize, boardSize, pos, isFlipped),
+              Logic.tileSize(boardSize, data.canvasSize),
+              imgPath,
+              pieceUiModel.isVisible.signal,
+              placedPieceDraggingBindings(pos, data.dm, handler)
+            )
+        }
+      }
 
     svg.svg(
       // TODO: should take canvasSize, but there is no styleProp for svg
       // and interpolation string for tailwind cls is broken
       svg.cls("min-w-[800px] h-[800px] bg-stone-800"),
-      svg.g(children <-- tilesSignal),
-      svg.g(children <-- _placedPiecesSignal),
+      svg.g(children <-- tileComponentsSignal),
+      svg.g(children <-- placedPiecesSignal),
       onMountCallback(ctx =>
         handler.onNext(ElementRefChanged(ctx.thisNode.ref))
       )
     )
   }
 
-  def placedPieceDraggingBindings(
+  private def placedPieceDraggingBindings(
       fromPos: Vec2d,
       dm: DM,
       handler: Observer[Event]
@@ -85,49 +94,18 @@ object BoardComponent {
       )
   }
 
-  def placedPiecesSignal(
-      boardSizeSignal: Signal[Vec2d],
-      placedPiecesSignal: Signal[Map[Vec2d, PieceUiModel]],
-      tileSize: BoardSize => Int,
-      canvasPos: (BoardSize, BoardPos) => Vec2d,
-      draggingBindings: BoardPos => Seq[Binder.Base]
-  ): Signal[List[Element]] = {
-    placedPiecesSignal
-      .combineWith(boardSizeSignal)
-      .map { case (placedPieces, boardSize) =>
-        placedPiecesOnBoard(placedPieces, boardSize).map {
-          case (pos, pieceUiModel) =>
-            val imgPath = Misc.pieceImgPath(pieceUiModel.piece)
-            placedPieceComponent(
-              canvasPos(boardSize, pos),
-              tileSize(boardSize),
-              imgPath,
-              pieceUiModel.isVisible.signal,
-              draggingBindings(pos)
-            )
-        }
-      }
-  }
-
-  def placedPiecesOnBoard(
+  private def placedPiecesOnBoard(
       placedPieces: Map[Vec2d, PieceUiModel],
       boardSize: Vec2d
   ): List[(Vec2d, PieceUiModel)] = {
     placedPieces
       .toList
       .collect {
-        case (pos, piece) if isPosOnBoard(pos, boardSize) => (pos, piece)
+        case (pos, piece) if Logic.isPosOnBoard(pos, boardSize) => (pos, piece)
       }
   }
 
-  def isPosOnBoard(pos: Vec2d, boardSize: Vec2d): Boolean =
-    isBetween(pos, Vec2d.zero, boardSize)
-
-  // TODO: dups in 2 places (search for isInside...)
-  def isBetween(v: Vec2d, b1: Vec2d, b2: Vec2d): Boolean = v.x >= b1.x &&
-    v.y >= b1.y && v.x < b2.x && v.y < b2.y
-
-  def placedPieceComponent(
+  private def placedPieceComponent(
       pos: Vec2d,
       tileSize: Int,
       pieceImgPath: String,
@@ -148,13 +126,4 @@ object BoardComponent {
       draggingBindings
     )
   }
-
-  def tileComponents(
-      tileComponent: Vec2d => Element,
-      boardSize: Vec2d
-  ): List[Element] = {
-    val tileLogicPositions = Vec2d.matrix(boardSize)
-    tileLogicPositions.map(tileComponent)
-  }
-
 }

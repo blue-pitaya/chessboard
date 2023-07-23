@@ -12,6 +12,7 @@ import example.HttpClient
 import example.Misc
 import example.Utils
 import example.components.BoardComponent
+import example.components.Logic
 import example.components.BoardComponent.ElementRefChanged
 import example.components.BoardComponent.PieceDragging
 import example.components.DraggingPiece
@@ -64,6 +65,18 @@ object GameService {
     Module(state, bindings, playerId)
   }
 
+  def shouldBoardBeFlipped(
+      playerId: String,
+      players: Map[PieceColor, PlayerState],
+      gameStarted: Boolean
+  ): Boolean = {
+    (players.get(White), players.get(Black)) match {
+      case (Some(PlayerState(whiteId, _)), Some(PlayerState(blackId, _)))
+          if blackId != whiteId && blackId == playerId && gameStarted => true
+      case _ => false
+    }
+  }
+
   private def createState(playerId: String) = State(
     Var(TrueGameState.empty),
     Var(Map()),
@@ -77,7 +90,6 @@ object GameService {
   )
 
   private def handleWsEvent(e: GameEvent_Out, state: GamePage.State): Unit = {
-    println(e)
     state.gameState.set(e.gameState)
     state.pieces.set(pieces(e.gameState.board))
     state.gameStarted.set(e.gameStarted)
@@ -122,7 +134,7 @@ object GameService {
     e match {
       case ElementRefChanged(v) => state.boardComponentRef.set(Some(v))
       case PieceDragging(e, fromPos) =>
-        val pieceOpt = state.pieces.now().get(fromPos)
+        val pieceModelOpt = state.pieces.now().get(fromPos)
         val gameStarted = state.gameStarted.now()
         val myPlayerId = state.playerId
         val currentTurn = state.gameState.now().turn
@@ -130,22 +142,23 @@ object GameService {
         val isMyPiece = (col: PieceColor) =>
           playerId(state, col).map(_ == myPlayerId).getOrElse(false)
 
-        (pieceOpt, gameStarted) match {
-          case (Some(piece), true) => if (isMyPiece(piece.piece.color)) {
-              val _movePiece =
-                (to: Vec2d) => movePiece(state, fromPos, to, piece)
-              val sendMoveEvent = (toPos: Vec2d) =>
-                sendWsEvent(Move(myPlayerId, fromPos, toPos, piece.piece.color))
-
-              handlePieceDragging(
-                e,
-                fromPos,
-                piece,
-                state,
-                sendMoveEvent,
-                _movePiece
+        (pieceModelOpt, gameStarted) match {
+          case (Some(pieceModel), true) if isMyPiece(pieceModel.piece.color) =>
+            val _movePiece =
+              (to: Vec2d) => movePiece(state, fromPos, to, pieceModel)
+            val sendMoveEvent = (toPos: Vec2d) =>
+              sendWsEvent(
+                Move(myPlayerId, fromPos, toPos, pieceModel.piece.color)
               )
-            } else ()
+
+            handlePieceDragging(
+              e,
+              fromPos,
+              pieceModel,
+              state,
+              sendMoveEvent,
+              _movePiece
+            )
           case _ => ()
         }
     }
@@ -205,12 +218,17 @@ object GameService {
       e: Dragging.Event
   ): Option[Vec2d] = {
     val boardSize = state.gameState.now().board.size
+    val boardFlipped = shouldBoardBeFlipped(
+      state.playerId,
+      state.players.now(),
+      state.gameStarted.now()
+    )
     val elementRefOpt = state.boardComponentRef.now()
 
     elementRefOpt.flatMap { elementRef =>
       val canvasSize = AppModel.DefaultBoardCanvasSize
       val canvasPos = EvHandler.getRelativePosition(e.e, elementRef)
-      EvHandler.tileLogicPos(boardSize, canvasSize, canvasPos)
+      Logic.tileLogicPos(boardSize, canvasSize, canvasPos, boardFlipped)
     }
   }
 
