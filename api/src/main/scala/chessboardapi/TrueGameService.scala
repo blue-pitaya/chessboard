@@ -2,17 +2,15 @@ package chessboardapi
 
 import cats.effect.IO
 import cats.effect.kernel.Ref
-import chessboardcore.HttpModel
 import chessboardcore.HttpModel._
 import chessboardcore.Model.PlayerState._
 import chessboardcore.Model._
-import chessboardcore.Vec2d
-import chessboardcore.gamelogic.MoveLogic
+import chessboardcore.gamelogic.GameLogic
+import fs2.Stream
 import io.circe.generic.auto._
 import monocle.syntax.all._
 import org.http4s.Response
 import org.http4s.server.websocket.WebSocketBuilder2
-import chessboardcore.gamelogic.GameLogic
 
 object TrueGameService {
   case class State(
@@ -47,99 +45,58 @@ object TrueGameService {
   private def handle(
       e: GameEvent_In,
       stateRef: Ref[IO, State]
-  ): IO[GameEvent_Out] = {
-    val _updateGameState = (f: State => State) => updateGameState(stateRef, f)
-    val _updateGameStateOrMsg = _updateGameState compose flattenMsg
+  ): fs2.Stream[IO, GameEvent_Out] = e match {
+    case GetGameState() => for {
+        state <- Stream.eval(stateRef.get)
+      } yield (GameStateChanged(state.gameState))
 
-    e match {
-      case GetGameState() => for {
-          state <- stateRef.get
-        } yield (HttpModel.Response(state.gameState, state.msg))
+    case PlayerSit(playerId, color) => for {
+        nextState <- Stream
+          .eval(stateRef.updateAndGet(s => handleSitPlayer(color, playerId, s)))
+      } yield (PlayersChanged(nextState.players))
 
-      case PlayerSit(playerId, color) =>
-        _updateGameState(s => sitPlayer(color, playerId, s))
+    case PlayerReady(playerId, color) => for {
+        nextState <- Stream.eval(
+          stateRef.updateAndGet(s => handlePlayerReady(s, playerId, color))
+        )
+        plChangedEvent = PlayersChanged(nextState.players)
+        events <-
+          if (nextState.gameStarted) Stream(plChangedEvent, GameStarted())
+          else Stream(plChangedEvent)
+      } yield (events)
 
-      case PlayerReady(playerId, color) =>
-        _updateGameState(s => handlePlayerReady(s, playerId, color))
-
-      case Move(playerId, from, to) => for {
-          _ <- IO.println(s"Move requested: $from -> $to by $playerId")
-          resp <- _updateGameStateOrMsg(s => tryMakeMove(s, playerId, from, to))
-        } yield (resp)
-    }
-  }
-
-  private def flattenMsg(f: State => Either[String, State]): State => State =
-    s =>
-      f(s) match {
-        case Left(err)        => s.copy(msg = err)
-        case Right(nextState) => nextState
+    case Move(playerId, from, to, color) =>
+      val verifyPlayerColor = (s: State) => {
+        if (
+          s.players
+            .exists { case (c, PlayerState(id, _)) =>
+              c == color && id == playerId
+            }
+        ) IO.unit
+        else IO
+          .raiseError(GameServiceModel.MakeMoveFail("It's not your piece!"))
       }
+      val makeMove = for {
+        state <- stateRef.get
+        _ <- verifyPlayerColor(state)
+        nextGameState <-
+          GameLogic.makeMove(from, to, color, state.gameState) match {
+            case Left(errMsg) =>
+              IO.raiseError(GameServiceModel.MakeMoveFail(errMsg))
+            case Right(v) => IO.pure(v)
+          }
+        nextState <-
+          stateRef.updateAndGet(_.focus(_.gameState).replace(nextGameState))
+      } yield (GameStateChanged(nextState.gameState))
 
-  private def tryMakeMove(
-      state: State,
-      playerId: String,
-      from: Vec2d,
-      to: Vec2d
-  ): Either[String, State] = {
-    val gameIsNotOver = state.gameState.gameOver.isEmpty
-    val moveIsPossible = MoveLogic.canMove(state.gameState.board, from, to)
-    val itsPlayersTurn = playerIdOfCurrentTurn(state)
-      .map(_ == playerId)
-      .getOrElse(false)
-
-    for {
-      _ <- trueOrErr(gameIsNotOver, "Game has already ended.")
-      _ <- trueOrErr(itsPlayersTurn, "It's not your turn.")
-      _ <- trueOrErr(moveIsPossible, "This move is illegal.")
-    } yield (makeMove(state, from, to))
+      Stream
+        .eval(makeMove)
+        .handleErrorWith { case GameServiceModel.MakeMoveFail(msg) =>
+          Stream.eval(IO.pure(StatusMessage(msg)))
+        }
   }
 
-  private def playerIdOfCurrentTurn(state: State): Option[String] = state
-    .players
-    .get(state.gameState.turn)
-    .map(_.id)
-
-  private def trueOrErr(cond: Boolean, msg: String): Either[String, Unit] =
-    Either.cond(cond, (), msg)
-
-  // TODO: dup?
-  private def makeMove(state: State, from: Vec2d, to: Vec2d): State = {
-    lazy val lens = state.focus(_.gameState.board.pieces)
-
-    state.gameState.board.pieces.get(from) match {
-      case None        => state
-      case Some(piece) => lens.modify(_.removed(from).updated(to, piece))
-    }
-  }
-
-  private def handlePlayerReady(
-      state: State,
-      playerId: String,
-      color: PieceColor
-  ): State = {
-    val nextState = readyPlayer(playerId, color, state)
-    if (areBothPlayersReady(state)) startGame(nextState)
-    else nextState
-  }
-
-  private def startGame(state: State): State = state
-    .focus(_.gameStarted)
-    .replace(true)
-
-  private def areBothPlayersReady(state: State): Boolean = state
-    .players
-    .filter(_._2.kind != Ready)
-    .isEmpty
-
-  private def updateGameState(
-      stateRef: Ref[IO, State],
-      f: State => State
-  ): IO[GameEvent_Out] = for {
-    nextState <- stateRef.updateAndGet(f)
-  } yield (HttpModel.Response(nextState.gameState, nextState.msg))
-
-  private def sitPlayer(
+  private def handleSitPlayer(
       color: PieceColor,
       playerId: String,
       state: State
@@ -152,18 +109,29 @@ object TrueGameService {
       }
     )
 
-  private def readyPlayer(
+  private def handlePlayerReady(
+      state: State,
       playerId: String,
-      color: PieceColor,
-      state: State
-  ): State = state
-    .focus(_.players)
-    .modify(pls =>
-      pls.get(color) match {
-        case Some(PlayerState(id, Sitting)) if id == playerId =>
-          pls.updated(color, PlayerState(id, Ready))
-        case _ => pls
+      color: PieceColor
+  ): State = {
+    val setPlayerReady = (s: State) =>
+      s.focus(_.players)
+        .modify(pls =>
+          pls.get(color) match {
+            case Some(PlayerState(id, Sitting)) if id == playerId =>
+              pls.updated(color, PlayerState(id, Ready))
+            case _ => pls
+          }
+        )
+    val areBothPlayersReady = (s: State) =>
+      (s.players.get(White), s.players.get(Black)) match {
+        case (Some(PlayerState(_, Ready)), Some(PlayerState(_, Ready))) => true
+        case _                                                          => false
       }
-    )
+    val startGameIfBothPlayersReady = (s: State) =>
+      if (areBothPlayersReady(s)) s.focus(_.gameStarted).replace(true)
+      else s
 
+    (setPlayerReady andThen startGameIfBothPlayersReady)(state)
+  }
 }

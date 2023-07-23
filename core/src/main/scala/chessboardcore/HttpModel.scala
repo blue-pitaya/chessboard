@@ -12,10 +12,13 @@ object HttpModel {
   sealed trait GameEvent_In
   case class GetGameState() extends GameEvent_In
   case class PlayerSit(playerId: String, color: PieceColor) extends GameEvent_In
-  case class PlayerReady(playerId: String, color: PieceColor)
-      extends GameEvent_In
-  case class Move(playerId: String, from: Vec2d, to: Vec2d) extends GameEvent_In
+  case class PlayerReady(playerId: String, color: PieceColor) extends GameEvent_In
+  // player color is needed, since player can play with himself (thus having same id on white and black)
+  case class Move(playerId: String, from: Vec2d, to: Vec2d, playerColor: PieceColor) extends GameEvent_In
 
   sealed trait GameEvent_Out
-  case class Response(v: TrueGameState, msg: String) extends GameEvent_Out
+  case class GameStateChanged(v: TrueGameState) extends GameEvent_Out
+  case class StatusMessage(v: String) extends GameEvent_Out
+  case class GameStarted() extends GameEvent_Out
+  case class PlayersChanged(v: Map[PieceColor, PlayerState]) extends GameEvent_Out
 }

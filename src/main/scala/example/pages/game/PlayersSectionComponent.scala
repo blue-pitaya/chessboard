@@ -5,9 +5,9 @@ import chessboardcore.Model._
 import com.raquo.laminar.api.L._
 import example.Styles
 
-//TODO: remove drilling
+//TODO: clean it
 
-object PlayersSection {
+object PlayersSectionComponent {
   sealed trait Event
   case class PlayerSit(color: PieceColor) extends Event
   case class PlayerReady(color: PieceColor) extends Event
@@ -20,7 +20,7 @@ object PlayersSection {
       currentTurn: Signal[PieceColor]
   )
 
-  def component(data: Data, handler: Observer[Event]): Element = {
+  def create(data: Data, handler: Observer[Event]): Element = {
     val _playerSection =
       (c: PieceColor, pls: Option[PlayerState], gs: Boolean) =>
         playerSection(data.myPlayerId, c, pls, gs, handler)

@@ -14,14 +14,18 @@ object WebSockerBroadcaster {
   type SendStream = Stream[IO, WebSocketFrame]
   type RecvPipe = Pipe[IO, WebSocketFrame, Unit]
 
-  def create[In, Out](handle: In => IO[Out])(implicit
+  def create[In, Out](handle: In => Stream[IO, Out])(implicit
       dec: Decoder[In],
       enc: Encoder[Out]
   ): IO[(SendStream, RecvPipe)] = {
     for {
       topic <- Topic[IO, Out]
       recvPipe = (inStream: Stream[IO, WebSocketFrame]) =>
-        inStream.evalMap(w => decode(w)).evalMap(handle).through(topic.publish)
+        inStream
+          .evalMap(w => decode(w))
+          .flatMap(handle)
+          .evalTap(IO.println)
+          .through(topic.publish)
       sendStream = topic.subscribeUnbounded.evalMap(w => encode(w))
     } yield ((sendStream, recvPipe))
   }

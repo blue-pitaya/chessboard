@@ -1,11 +1,12 @@
 package chessboardcore
 
-import cats.effect.IO
+import cats.effect.kernel.Sync
+
 import scala.util.Random
 
 object Utils {
 
-  def createId(): IO[String] = IO(unsafeCreateId())
+  def createId[F[_]: Sync](): F[String] = Sync[F].delay(unsafeCreateId())
 
   def unsafeCreateId(): String = (0 until 32).foldLeft("") { case (acc, _) =>
     acc ++ Random.nextInt(16).toHexString

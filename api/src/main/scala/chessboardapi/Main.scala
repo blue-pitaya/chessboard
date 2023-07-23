@@ -5,16 +5,14 @@ import cats.effect.IOApp
 import cats.effect.kernel.Ref
 
 case class GlobalState(
-    boardStateRef: Ref[IO, ChessboardRepository.State],
     gameServiceStateRef: Ref[IO, GameServiceModel.State]
 )
 
 object Main extends IOApp.Simple {
 
   def initState(): IO[GlobalState] = for {
-    bsRef <- ChessboardRepository.createState()
     gssRef <- GameService.createState()
-    globalState = GlobalState(bsRef, gssRef)
+    globalState = GlobalState(gssRef)
   } yield (globalState)
 
   override def run: IO[Unit] = debugRun()

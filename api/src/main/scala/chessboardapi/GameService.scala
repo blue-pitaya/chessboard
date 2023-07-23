@@ -13,6 +13,7 @@ object GameServiceModel {
 
   sealed trait Fail extends Throwable
   case class GameNotFound(id: String) extends Fail
+  case class MakeMoveFail(msg: String) extends Fail
 }
 
 object GameService {
@@ -34,7 +35,7 @@ object GameService {
   }
 
   def create(stateRef: Ref[IO, State], board: Board): IO[String] = for {
-    id <- Utils.createId()
+    id <- Utils.createId[IO]()
     module <- TrueGameService.create(board)
     _ <- stateRef.update(s => s.copy(games = s.games.updated(id, module)))
   } yield (id)

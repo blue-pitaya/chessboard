@@ -8,51 +8,85 @@ import com.raquo.laminar.api.L._
 import dev.bluepitaya.laminardragging.DragEventKind
 import dev.bluepitaya.laminardragging.Dragging
 import example.AppModel
+import example.HttpClient
 import example.Misc
+import example.Utils
 import example.components.BoardComponent
 import example.components.BoardComponent.ElementRefChanged
 import example.components.BoardComponent.PieceDragging
 import example.components.DraggingPiece
 import example.pages.creator.EvHandler
+import io.circe.generic.auto._
 import io.laminext.websocket.WebSocket
+import io.laminext.websocket.circe._
+
+//TODO: clean
 
 object GameService {
-  case class Module(sendWsEventObserver: Observer[GameEvent_In])
+  import GamePage.State
+
+  case class Module(state: State, bindings: Seq[Binder.Base], playerId: String)
 
   def wire(
+      gameId: String,
       events: EventStream[GamePage.Event],
-      plSectionEvents: EventStream[PlayersSection.Event],
-      boardCompEvents: EventStream[BoardComponent.Event],
-      state: GamePage.State,
-      ws: WebSocket[GameEvent_Out, GameEvent_In]
-  ): Seq[Binder.Base] = Seq(
-    ws.received.-->(Observer[GameEvent_Out](e => handleWsEvent(e, state))),
-    events
-      .-->(Observer[GamePage.Event](e => handleEvent(e, state, ws.sendOne))),
-    plSectionEvents.-->(
-      Observer[PlayersSection.Event](e =>
-        handlePlSectionEvent(e, state, ws.sendOne)
-      )
-    ),
-    boardCompEvents.-->(
-      Observer[BoardComponent.Event](e =>
-        handleBoardComponentEvent(e, state, ws.sendOne)
-      )
+      plSectionEvents: EventStream[PlayersSectionComponent.Event],
+      boardCompEvents: EventStream[BoardComponent.Event]
+  ): Module = {
+    // ignore potential error, it's unlikely to happen
+    // and also what if it happen? some kid wouldn't be able
+    // to play some custom chess or whatever
+    val playerId = Utils.catsUnsafeRunSync(PlayerService.createOrLoadId())
+    val state = createState(playerId)
+
+    val ws: WebSocket[GameEvent_Out, GameEvent_In] = WebSocket
+      .url(HttpClient.gameWebSockerUrl(gameId))
+      .json[GameEvent_Out, GameEvent_In]
+      .build()
+
+    val bindings = Seq(
+      ws.received.-->(Observer[GameEvent_Out](e => handleWsEvent(e, state))),
+      events
+        .-->(Observer[GamePage.Event](e => handleEvent(e, state, ws.sendOne))),
+      plSectionEvents.-->(
+        Observer[PlayersSectionComponent.Event](e => handlePlSectionEvent(e, state, ws.sendOne))
+      ),
+      boardCompEvents.-->(
+        Observer[BoardComponent.Event](e => handleBoardComponentEvent(e, state, ws.sendOne))
+      ),
+      ws.connect
     )
+
+    Module(state, bindings, playerId)
+  }
+
+  private def createState(playerId: String) = State(
+    Var(TrueGameState.empty),
+    Var(Map()),
+    Var(false),
+    playerId,
+    Var(None),
+    Var(None),
+    Var(Map()),
+    Var(Set()),
+    Var("")
   )
 
-  private def handleWsEvent(e: GameEvent_Out, state: GamePage.State): Unit =
+  private def handleWsEvent(e: GameEvent_Out, state: GamePage.State): Unit = {
+    println(e)
+
     e match {
-      case Response(gameState, msg) =>
-        state.gameState.set(gameState)
-        state.pieces.set(pieces(gameState.board))
-        state.msgFromApi.set(msg)
-      case _ => ()
+      case GameStateChanged(v) =>
+        state.gameState.set(v)
+        state.pieces.set(pieces(v.board))
+      case GameStarted()     => state.gameStarted.set(true)
+      case PlayersChanged(v) => state.players.set(v)
+      case StatusMessage(v)  => state.msgFromApi.set(v)
     }
+  }
 
   private def pieces(board: Board): Map[Vec2d, BoardComponent.PieceUiModel] =
-    board
-      .pieces
+    board.pieces
       .map { case (pos, piece) =>
         (pos, createPieceModel(piece))
       }
@@ -69,13 +103,13 @@ object GameService {
   }
 
   private def handlePlSectionEvent(
-      e: PlayersSection.Event,
+      e: PlayersSectionComponent.Event,
       state: GamePage.State,
       sendWsEvent: GameEvent_In => Unit
   ): Unit = e match {
-    case PlayersSection.PlayerSit(color) =>
+    case PlayersSectionComponent.PlayerSit(color) =>
       sendWsEvent(PlayerSit(state.playerId, color))
-    case PlayersSection.PlayerReady(color) =>
+    case PlayersSectionComponent.PlayerReady(color) =>
       sendWsEvent(PlayerReady(state.playerId, color))
   }
 
@@ -91,15 +125,17 @@ object GameService {
         val gameStarted = state.gameStarted.now()
         val myPlayerId = state.playerId
         val currentTurn = state.gameState.now().turn
-        val isMyPiece = (col: PieceColor) =>
-          playerId(state, col).map(_ == myPlayerId).getOrElse(false)
-        val sendMoveEvent =
-          (toPos: Vec2d) => sendWsEvent(Move(myPlayerId, fromPos, toPos))
+
+        val isMyPiece = (col: PieceColor) => playerId(state, col).map(_ == myPlayerId).getOrElse(false)
 
         (pieceOpt, gameStarted) match {
-          case (Some(piece), true) => if (isMyPiece(piece.piece.color)) {
+          case (Some(piece), true) =>
+            if (isMyPiece(piece.piece.color)) {
               val _movePiece =
                 (to: Vec2d) => movePiece(state, fromPos, to, piece)
+              val sendMoveEvent =
+                (toPos: Vec2d) => sendWsEvent(Move(myPlayerId, fromPos, toPos, piece.piece.color))
+
               handlePieceDragging(
                 e,
                 fromPos,
@@ -129,8 +165,7 @@ object GameService {
       movePiece: Vec2d => Unit
   ): Unit = {
     lazy val board = state.gameState.now().board
-    val _updatePieceDraggingState = () =>
-      updatePieceDraggingState(state, e, Misc.pieceImgPath(pieceModel.piece))
+    val _updatePieceDraggingState = () => updatePieceDraggingState(state, e, Misc.pieceImgPath(pieceModel.piece))
 
     e.kind match {
       case DragEventKind.Start =>

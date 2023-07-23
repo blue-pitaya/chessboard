@@ -4,14 +4,9 @@ import chessboardcore.Model._
 import chessboardcore.Vec2d
 import com.raquo.laminar.api.L._
 import example.AppModel
-import example.HttpClient
 import example.components.BoardComponent
 import example.components.DraggingPiece
-import io.circe.generic.auto._
-import io.laminext.websocket.WebSocket
-import io.laminext.websocket.circe._
 import org.scalajs.dom
-import chessboardcore.HttpModel._
 
 object GamePage {
   sealed trait Event
@@ -29,37 +24,21 @@ object GamePage {
       msgFromApi: Var[String]
   )
 
-  private def createState(playerId: String) = State(
-    Var(TrueGameState.empty),
-    Var(Map()),
-    Var(false),
-    playerId,
-    Var(None),
-    Var(None),
-    Var(Map()),
-    Var(Set()),
-    Var("")
-  )
-
   def component(gameId: String, dm: AppModel.DM): Element = {
-    val playerId = chessboardcore.Utils.unsafeCreateId()
-    val state = createState(playerId)
     val bus = new EventBus[Event]
-    val plSectionBus = new EventBus[PlayersSection.Event]
+    val plSectionBus = new EventBus[PlayersSectionComponent.Event]
     val boardBus = new EventBus[BoardComponent.Event]
-    val ws: WebSocket[GameEvent_Out, GameEvent_In] = WebSocket
-      .url(HttpClient.gameWebSockerUrl(gameId))
-      .json[GameEvent_Out, GameEvent_In]
-      .build()
+
+    val gameServiceModule = GameService
+      .wire(gameId, bus.events, plSectionBus.events, boardBus.events)
+    val state = gameServiceModule.state
 
     div(
-      GameService
-        .wire(bus.events, plSectionBus.events, boardBus.events, state, ws),
+      gameServiceModule.bindings,
       cls("flex flex-row gap-4 m-4"),
       boardComponent(state, dm, boardBus.writer),
       playersSectionComponent(state, plSectionBus.writer),
       div(child.text <-- state.msgFromApi.signal),
-      ws.connect,
       child <-- draggingPieceComponentSignal(state),
       onMountCallback { ctx =>
         bus.emit(RequestGameState())
@@ -85,9 +64,9 @@ object GamePage {
 
   private def playersSectionComponent(
       state: State,
-      plSectionObs: Observer[PlayersSection.Event]
+      plSectionObs: Observer[PlayersSectionComponent.Event]
   ): Element = {
-    val data = PlayersSection.Data(
+    val data = PlayersSectionComponent.Data(
       state.playerId,
       state.players.signal.map(_.get(White)),
       state.players.signal.map(_.get(Black)),
@@ -95,7 +74,7 @@ object GamePage {
       state.gameState.signal.map(_.turn)
     )
 
-    PlayersSection.component(data, plSectionObs)
+    PlayersSectionComponent.create(data, plSectionObs)
   }
 
   private def draggingPieceComponentSignal(state: State): Signal[Node] = {

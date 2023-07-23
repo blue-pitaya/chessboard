@@ -4,6 +4,10 @@ import chessboardcore.Vec2d
 import cats.effect.IO
 import org.scalajs.dom
 import cats.effect.unsafe.implicits.global
+import cats.effect.SyncIO
+import scala.util.Try
+import scala.util.Failure
+import scala.util.Success
 
 object Utils {
   def transformStr(v: Vec2d) = s"translate(${v.x}, ${v.y})"
@@ -45,4 +49,12 @@ object Utils {
   def catsRun[A](f: A => IO[Unit]): A => Unit = { e =>
     run(f(e))
   }
+
+  def catsRunSync[A](f: SyncIO[A], callBk: A => Unit): Unit =
+    Try(f.unsafeRunSync()) match {
+      case Failure(exception) => dom.console.error(exception)
+      case Success(value)     => callBk(value)
+    }
+
+  def catsUnsafeRunSync[A](f: SyncIO[A]): A = f.unsafeRunSync()
 }
