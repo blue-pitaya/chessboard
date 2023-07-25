@@ -5,9 +5,9 @@ import chessboardcore.Vec2d
 import com.raquo.laminar.api.L._
 import dev.bluepitaya.laminardragging.Dragging
 import example.AppModel._
-import example.Misc
 import example.components.Logic
 import org.scalajs.dom
+import example.Utils
 
 object BoardComponent {
   type BoardSize = Vec2d
@@ -57,7 +57,7 @@ object BoardComponent {
       .map { case (placedPieces, boardSize, isFlipped) =>
         placedPiecesOnBoard(placedPieces, boardSize).map {
           case (pos, pieceUiModel) =>
-            val imgPath = Misc.pieceImgPath(pieceUiModel.piece)
+            val imgPath = Utils.pieceImgPath(pieceUiModel.piece)
 
             placedPieceComponent(
               Logic.tileCanvasPos(data.canvasSize, boardSize, pos, isFlipped),

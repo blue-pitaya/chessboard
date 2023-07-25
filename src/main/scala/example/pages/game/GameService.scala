@@ -9,19 +9,17 @@ import dev.bluepitaya.laminardragging.DragEventKind
 import dev.bluepitaya.laminardragging.Dragging
 import example.AppModel
 import example.HttpClient
-import example.Misc
 import example.Utils
 import example.components.BoardComponent
-import example.components.Logic
 import example.components.BoardComponent.ElementRefChanged
 import example.components.BoardComponent.PieceDragging
 import example.components.DraggingPiece
-import example.pages.creator.EvHandler
+import example.components.Logic
 import io.circe.generic.auto._
 import io.laminext.websocket.WebSocket
 import io.laminext.websocket.circe._
 
-//TODO: clean
+//TODO: clean, should be named GamePageLogic
 
 object GameService {
   import GamePage.State
@@ -180,7 +178,7 @@ object GameService {
   ): Unit = {
     lazy val board = state.gameState.now().board
     val _updatePieceDraggingState = () =>
-      updatePieceDraggingState(state, e, Misc.pieceImgPath(pieceModel.piece))
+      updatePieceDraggingState(state, e, Utils.pieceImgPath(pieceModel.piece))
 
     e.kind match {
       case DragEventKind.Start =>
@@ -227,7 +225,7 @@ object GameService {
 
     elementRefOpt.flatMap { elementRef =>
       val canvasSize = AppModel.DefaultBoardCanvasSize
-      val canvasPos = EvHandler.getRelativePosition(e.e, elementRef)
+      val canvasPos = Utils.getRelativePosition(e.e, elementRef)
       Logic.tileLogicPos(boardSize, canvasSize, canvasPos, boardFlipped)
     }
   }
