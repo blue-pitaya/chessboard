@@ -23,7 +23,8 @@ object GameOverLogic {
       case (Some(_), None) => Some(WinFor(White, noKingOf(Black)))
       case (None, Some(_)) => Some(WinFor(Black, noKingOf(White)))
       case (Some((_, whiteKingPiece)), Some((_, blackKingPiece))) =>
-        turnFor match {
+        if (board.pieces.size == 2) Some(Draw(insufficientMaterialToMate))
+        else turnFor match {
           case White => checkStalemateOrMate(board, whiteKingPiece.color)
           case Black => checkStalemateOrMate(board, blackKingPiece.color)
         }
@@ -64,4 +65,5 @@ object GameOverReasons {
     "Both kings are holding each other on gunpoint. People may chose now, peace or anarchy."
   val regularWin = "Just regular chess win. Nothing special."
   val staleMate = "Stalemate. King has hidden and refuse to face the world."
+  val insufficientMaterialToMate = "Draw. Kings are too afraid to solo fight."
 }
