@@ -43,7 +43,10 @@ object GamePage {
         boardComponent(state, dm, boardBus.writer),
         playersSectionComponent(state, plSectionBus.writer)
       ),
-      div(child.text <-- gameOverTextSignal(state.gameState.signal)),
+      div(
+        cls("text-red-400"),
+        child.text <-- gameOverTextSignal(state.gameState.signal)
+      ),
       div(child.text <-- state.msgFromApi.signal.map(_.getOrElse(""))),
       child <-- draggingPieceComponentSignal(state),
       onMountCallback { ctx =>
@@ -56,12 +59,14 @@ object GamePage {
       gameState: Signal[TrueGameState]
   ): Signal[String] = {
     gameState.map { s =>
-      s.gameOver match {
+      val text = s.gameOver match {
         case None                        => ""
         case Some(Draw(reason))          => reason
         case Some(WinFor(White, reason)) => s"White won! $reason"
         case Some(WinFor(Black, reason)) => s"Black won! $reason"
       }
+
+      s"Game over: $text"
     }
   }
 

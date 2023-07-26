@@ -26,7 +26,15 @@ object PlayersSectionComponent {
         playerSection(data.myPlayerId, c, pls, gs, handler)
 
     div(
-      cls("flex flex-col bg-stone-800 gap-4 w-[200px]"),
+      cls("flex flex-col bg-stone-800 gap-4 w-[200px] p-4"),
+      p(
+        cls("text-sm text-gray-300"),
+        "Send link of this page to your friend to play together."
+      ),
+      p(
+        cls("text-sm text-gray-300"),
+        "You can play with yourself, by sitting on both white and black player spot."
+      ),
       child <--
         data
           .whitePlayerState
@@ -48,7 +56,11 @@ object PlayersSectionComponent {
   def currentTurnSection(turn: PieceColor): Element = {
     val plLabel = playerLabel(turn)
 
-    div(cls("flex flex-col"), div("Current turn:"), div(plLabel))
+    div(
+      cls("flex flex-col mt-4"),
+      div(cls("text-yellow-200"), "Current turn:"),
+      div(plLabel)
+    )
   }
 
   def playerSection(
