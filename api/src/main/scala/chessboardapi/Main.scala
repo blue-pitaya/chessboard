@@ -3,15 +3,15 @@ package chessboardapi
 import cats.effect.IO
 import cats.effect.IOApp
 import cats.effect.kernel.Ref
+import chessboardapi.game.GameModel
+import chessboardapi.game.GameRepository
 
-case class GlobalState(
-    gameServiceStateRef: Ref[IO, GameServiceModel.State]
-)
+case class GlobalState(gameServiceStateRef: Ref[IO, GameModel.RepositoryState])
 
 object Main extends IOApp.Simple {
 
   def initState(): IO[GlobalState] = for {
-    gssRef <- GameService.createState()
+    gssRef <- GameRepository.createState()
     globalState = GlobalState(gssRef)
   } yield (globalState)
 

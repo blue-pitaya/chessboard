@@ -7,22 +7,27 @@ import cats.effect.SyncIO
 object PlayerService {
   type PlayerId = String
 
-  private val localStorageKey = "myId"
+  private val playerIdKey = "myId"
+  private val tokenKey = "myToken"
 
-  def createOrLoadId(): SyncIO[String] = for {
-    idOpt <- loadPlayerId()
+  def createOrLoadToken(): SyncIO[String] = createOrLoadId(tokenKey)
+
+  def createOfLoadPlayerId(): SyncIO[String] = createOrLoadId(playerIdKey)
+
+  private def createOrLoadId(key: String): SyncIO[String] = for {
+    idOpt <- load(key)
     id <- idOpt match {
       case Some(id) => SyncIO.pure(id)
-      case None     => createAndSaveId()
+      case None     => createAndSave(key)
     }
   } yield (id)
 
-  private def loadPlayerId(): SyncIO[Option[String]] =
-    SyncIO(Option(dom.window.localStorage.getItem(localStorageKey)))
+  private def load(key: String): SyncIO[Option[String]] =
+    SyncIO(Option(dom.window.localStorage.getItem(key)))
 
-  private def createAndSaveId(): SyncIO[String] = for {
+  private def createAndSave(key: String): SyncIO[String] = for {
     id <- Utils.createId[SyncIO]()
-    _ <- SyncIO(dom.window.localStorage.setItem(localStorageKey, id))
+    _ <- SyncIO(dom.window.localStorage.setItem(key, id))
   } yield (id)
 
 }

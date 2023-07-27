@@ -24,7 +24,7 @@ import io.laminext.websocket.circe._
 object GameService {
   import GamePage.State
 
-  case class Module(state: State, bindings: Seq[Binder.Base], playerId: String)
+  case class Module(state: State, bindings: Seq[Binder.Base])
 
   def wire(
       gameId: String,
@@ -35,12 +35,13 @@ object GameService {
     // ignore potential error, it's unlikely to happen
     // and also what if it happen? some kid wouldn't be able
     // to play some custom chess or whatever
-    val playerId = Utils.catsUnsafeRunSync(PlayerService.createOrLoadId())
-    val state = createState(playerId)
+    val playerId = Utils.catsUnsafeRunSync(PlayerService.createOfLoadPlayerId())
+    val token = Utils.catsUnsafeRunSync(PlayerService.createOrLoadToken())
+    val state = createState(playerId, token)
 
-    val ws: WebSocket[GameEvent_Out, GameEvent_In] = WebSocket
+    val ws = WebSocket
       .url(HttpClient.gameWebSockerUrl(gameId))
-      .json[GameEvent_Out, GameEvent_In]
+      .json[GameEvent_Out, WsInputMessage]
       .build()
 
     val bindings = Seq(
@@ -60,7 +61,7 @@ object GameService {
       ws.connect
     )
 
-    Module(state, bindings, playerId)
+    Module(state, bindings)
   }
 
   def shouldBoardBeFlipped(
@@ -75,7 +76,7 @@ object GameService {
     }
   }
 
-  private def createState(playerId: String) = State(
+  private def createState(playerId: String, token: String) = State(
     Var(TrueGameState.empty),
     Var(Map()),
     Var(false),
@@ -84,7 +85,8 @@ object GameService {
     Var(None),
     Var(Map()),
     Var(Set()),
-    Var(None)
+    Var(None),
+    token
   )
 
   private def handleWsEvent(e: GameEvent_Out, state: GamePage.State): Unit = {
@@ -108,26 +110,28 @@ object GameService {
   private def handleEvent(
       e: GamePage.Event,
       state: GamePage.State,
-      sendWsEvent: GameEvent_In => Unit
+      sendWsEvent: WsInputMessage => Unit
   ): Unit = e match {
-    case GamePage.RequestGameState() => sendWsEvent(GetGameState())
+    case GamePage.RequestGameState() =>
+      sendWsEvent(WsInputMessage(state.token, GetGameState()))
   }
 
   private def handlePlSectionEvent(
       e: PlayersSectionComponent.Event,
       state: GamePage.State,
-      sendWsEvent: GameEvent_In => Unit
+      sendWsEvent: WsInputMessage => Unit
   ): Unit = e match {
     case PlayersSectionComponent.PlayerSit(color) =>
-      sendWsEvent(PlayerSit(state.playerId, color))
-    case PlayersSectionComponent.PlayerReady(color) =>
-      sendWsEvent(PlayerReady(state.playerId, color))
+      sendWsEvent(WsInputMessage(state.token, PlayerSit(state.playerId, color)))
+    case PlayersSectionComponent.PlayerReady(color) => sendWsEvent(
+        WsInputMessage(state.token, PlayerReady(state.playerId, color))
+      )
   }
 
   private def handleBoardComponentEvent(
       e: BoardComponent.Event,
       state: GamePage.State,
-      sendWsEvent: GameEvent_In => Unit
+      sendWsEvent: WsInputMessage => Unit
   ): Unit = {
     e match {
       case ElementRefChanged(v) => state.boardComponentRef.set(Some(v))
@@ -146,7 +150,10 @@ object GameService {
               (to: Vec2d) => movePiece(state, fromPos, to, pieceModel)
             val sendMoveEvent = (toPos: Vec2d) =>
               sendWsEvent(
-                Move(myPlayerId, fromPos, toPos, pieceModel.piece.color)
+                WsInputMessage(
+                  state.token,
+                  Move(myPlayerId, fromPos, toPos, pieceModel.piece.color)
+                )
               )
 
             handlePieceDragging(

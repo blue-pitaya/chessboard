@@ -10,10 +10,12 @@ import org.http4s.circe.CirceEntityEncoder._
 import org.http4s.dsl.Http4sDsl
 import org.http4s.server.websocket.WebSocketBuilder2
 import chessboardcore.Model._
+import chessboardapi.game.GameModel
+import chessboardapi.game.GameRepository
 
 object Routes {
   def gameRoutes(
-      state2Ref: Ref[IO, GameServiceModel.State],
+      stateRef: Ref[IO, GameModel.RepositoryState],
       ws: WebSocketBuilder2[IO]
   ): HttpRoutes[IO] = {
     val GamePart = "game"
@@ -21,17 +23,15 @@ object Routes {
     import dsl._
 
     HttpRoutes.of[IO] {
-      case req @ PUT -> Root / GamePart =>
-        for {
+      case req @ PUT -> Root / GamePart => for {
           data <- req.as[CreateGame_In]
           board = data.board
-          gameId <- GameService.create(state2Ref, board)
+          gameId <- GameRepository.create(stateRef, board)
           resp <- Ok(CreateGame_Out(gameId))
         } yield (resp)
 
-      case _ -> Root / GamePart / gameId / "ws" =>
-        for {
-          resp <- GameService.join(gameId, state2Ref, ws)
+      case _ -> Root / GamePart / gameId / "ws" => for {
+          resp <- GameRepository.join(gameId, stateRef, ws)
         } yield (resp)
     }
   }

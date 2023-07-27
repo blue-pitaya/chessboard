@@ -23,7 +23,8 @@ object GamePage {
       boardComponentRef: Var[Option[dom.Element]],
       pieces: Var[Map[Vec2d, BoardComponent.PieceUiModel]],
       highlightedTiles: Var[Set[Vec2d]],
-      msgFromApi: Var[Option[String]]
+      msgFromApi: Var[Option[String]],
+      token: String
   )
 
   def component(gameId: String, dm: AppModel.DM): Element = {
@@ -59,14 +60,13 @@ object GamePage {
       gameState: Signal[TrueGameState]
   ): Signal[String] = {
     gameState.map { s =>
-      val text = s.gameOver match {
+      lazy val prefix = "Game over:"
+      s.gameOver match {
         case None                        => ""
-        case Some(Draw(reason))          => reason
-        case Some(WinFor(White, reason)) => s"White won! $reason"
-        case Some(WinFor(Black, reason)) => s"Black won! $reason"
+        case Some(Draw(reason))          => s"$prefix $reason"
+        case Some(WinFor(White, reason)) => s"$prefix White won! $reason"
+        case Some(WinFor(Black, reason)) => s"$prefix Black won! $reason"
       }
-
-      s"Game over: $text"
     }
   }
 

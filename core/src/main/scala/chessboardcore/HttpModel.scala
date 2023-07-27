@@ -22,6 +22,8 @@ object HttpModel {
       playerColor: PieceColor
   ) extends GameEvent_In
 
+  case class WsInputMessage(token: String, event: HttpModel.GameEvent_In)
+
   case class GameEvent_Out(
       gameState: TrueGameState,
       msg: Option[String],
