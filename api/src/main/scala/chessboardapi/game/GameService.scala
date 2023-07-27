@@ -19,7 +19,7 @@ import org.http4s.Response
 import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.websocket.WebSocketFrame
 
-object GameService {
+object GameServiceModel {
   sealed trait Recipient
   object Recipient {
     case class User(token: String) extends Recipient
@@ -27,6 +27,8 @@ object GameService {
   }
 
   case class OutputMsg(recipient: Recipient, event: HttpModel.GameEvent_Out)
+
+  case class MakeMoveFail(msg: String) extends Throwable
 
   case class State(
       gameState: TrueGameState,
@@ -42,6 +44,10 @@ object GameService {
   }
 
   case class Module(join: WebSocketBuilder2[IO] => IO[Response[IO]])
+}
+
+object GameService {
+  import GameServiceModel._
 
   def create(board: Board): IO[Module] = {
     for {
@@ -128,8 +134,8 @@ object GameService {
       to: Vec2d,
       color: PieceColor,
       state: State
-  ): Either[GameModel.MakeMoveFail, State] = {
-    val verifyPlayerColor: Either[GameModel.MakeMoveFail, Unit] = {
+  ): Either[MakeMoveFail, State] = {
+    val verifyPlayerColor: Either[MakeMoveFail, Unit] = {
       if (
         state
           .players
@@ -137,30 +143,19 @@ object GameService {
             c == color && id == playerId
           }
       ) Right(())
-      else Left(GameModel.MakeMoveFail("It's not your piece!"))
+      else Left(MakeMoveFail("It's not your piece!"))
     }
 
     for {
       _ <- verifyPlayerColor
       nextGameState <-
         GameLogic.makeMove(from, to, color, state.gameState) match {
-          case Left(errMsg) => Left(GameModel.MakeMoveFail(errMsg))
+          case Left(errMsg) => Left(MakeMoveFail(errMsg))
           case Right(v)     => Right(v)
         }
       nextState = state.focus(_.gameState).replace(nextGameState)
     } yield (nextState)
   }
-
-  private def toResponse(s: State): HttpModel.GameEvent_Out = HttpModel
-    .GameEvent_Out(
-      gameState = s.gameState,
-      msg = None,
-      gameStarted = s.gameStarted,
-      players = s.players
-    )
-
-  private def toResponse(s: State, msg: String): HttpModel.GameEvent_Out =
-    toResponse(s).copy(msg = Some(msg))
 
   private def handlePlayerReady(
       state: State,
@@ -200,4 +195,16 @@ object GameService {
         case _    => pls
       }
     )
+
+  private def toResponse(s: State): HttpModel.GameEvent_Out = HttpModel
+    .GameEvent_Out(
+      gameState = s.gameState,
+      msg = None,
+      gameStarted = s.gameStarted,
+      players = s.players
+    )
+
+  private def toResponse(s: State, msg: String): HttpModel.GameEvent_Out =
+    toResponse(s).copy(msg = Some(msg))
+
 }
