@@ -16,6 +16,10 @@ val LogbackVersion = "1.4.8"
 val MunitCatsEffectVersion = "1.0.7"
 val MonocleVersion = "3.1.0"
 
+lazy val macros = (project in file("macros")).settings(
+  libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
+)
+
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .withoutSuffixFor(JVMPlatform)
   .crossType(CrossType.Pure)
@@ -43,6 +47,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
 
 lazy val root = (project in file("."))
   .dependsOn(core.js)
+  .dependsOn(macros)
   .settings(
     name := "chessboard",
     libraryDependencies += "com.raquo" %%% "laminar" % "16.0.0",
@@ -66,14 +71,18 @@ lazy val root = (project in file("."))
         "org.http4s" %%% "http4s-dom" % "0.2.9",
         "org.http4s" %%% "http4s-dsl" % Http4sVersion
       ),
-    scalaJSLinkerConfig ~= {
+    scalaJSUseMainModuleInitializer := true,
+    Compile / fastLinkJS / scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.ESModule)
         .withOutputPatterns(OutputPatterns.fromJSFile("%s.js"))
         .withESFeatures(_.withESVersion(ESVersion.ES2021))
     },
-    scalaJSUseMainModuleInitializer := true,
     Compile / fastLinkJS / scalaJSLinkerOutputDirectory :=
       baseDirectory.value / "ui/sccode/",
+    Compile / fullLinkJS / scalaJSLinkerConfig ~= {
+      _.withModuleKind(ModuleKind.CommonJSModule)
+        .withOutputPatterns(OutputPatterns.fromJSFile("%s.js"))
+    },
     Compile / fullLinkJS / scalaJSLinkerOutputDirectory :=
       baseDirectory.value / "ui/sccode/"
   )
@@ -98,4 +107,13 @@ lazy val api = (project in file("api"))
         "dev.optics" %%% "monocle-core" % MonocleVersion,
         "dev.optics" %%% "monocle-macro" % MonocleVersion
       )
+  )
+  .enablePlugins(JavaAppPackaging)
+  .enablePlugins(DockerPlugin)
+  .settings(
+    dockerBaseImage := "openjdk",
+    dockerExposedPorts := Seq(8080),
+    dockerUpdateLatest := true,
+    Docker / packageName := "chessboard-api",
+    Docker / version := "latest"
   )

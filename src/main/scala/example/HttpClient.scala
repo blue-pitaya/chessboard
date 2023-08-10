@@ -9,11 +9,11 @@ import org.http4s._
 import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.circe._
 import org.http4s.client.Client
-import org.http4s.implicits._
+import macros.Envs
 
 object HttpClient {
-  val ApiPath = uri"http://localhost:8080/"
-  val WsApiPath = uri"ws://localhost:8080/"
+  val ApiPath = Uri.fromString(Envs.ApiPath).toOption.get
+  val WsApiPath = Uri.fromString(Envs.WsApiPath).toOption.get
 
   def gameWebSockerUrl(id: String): String = (WsApiPath / "game" / id / "ws")
     .toString()
