@@ -42,7 +42,7 @@ object CreatorPageLogic {
     e match {
       case BoardContainerRefChanged(v) => s.boardContainerRef.set(Some(v))
 
-      case BoardHeightChanged(v) => s.boardSize.update(size => Vec2d(v, size.y))
+      case BoardHeightChanged(v) => s.boardSize.update(size => Vec2d(size.x, v))
 
       case BoardWidthChanged(v) => s.boardSize.update(size => Vec2d(v, size.y))
 
